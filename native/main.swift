@@ -498,6 +498,35 @@ func disposeOld(_ path: String, in parent: String, id: String) {
     try? fm.removeItem(at: url)  // when this fails too the old app stays under its visible name; the new one is in place
 }
 
+// Hand-over at start: a copy that is older than the Burnboard installed in /Applications or ~/Applications opens
+// that one and ends. The first update installs there while the downloaded copy stays where it was (it runs
+// translocated and cannot replace itself), so a Dock icon or a double click on the old copy must still lead to the
+// new app. Only a real bundle of this app (no link), strictly newer than this one, with a valid code signature and
+// without the quarantine mark (a copy macOS may still refuse to open would leave the user with no app at all; what
+// the updater installs carries none); never this copy itself. Nothing outside the two Applications folders is
+// looked at.
+func newerInstalledCopy(running: URL, candidates: [URL]) -> URL? {
+    guard let mine = versionParts(runningVersion) else { return nil }
+    let own = running.resolvingSymlinksInPath().path
+    for c in candidates {
+        guard c.resolvingSymlinksInPath().path != own, isBurnboardBundle(c.path),
+              let theirs = versionParts(bundleInfo(c.path)?["CFBundleShortVersionString"] as? String ?? ""),
+              isNewer(theirs, than: mine),
+              getxattr(c.path, "com.apple.quarantine", nil, 0, 0, XATTR_NOFOLLOW) < 0,
+              runTool("/usr/bin/codesign", ["--verify", "--deep", "--strict", c.path]) == 0 else { continue }
+        return c
+    }
+    return nil
+}
+
+let installedPlaces: [URL] = {
+    #if UPDATE_TEST
+    if let list = testEnvironment["BURNBOARD_TEST_APPS"] { return list.split(separator: ":").map { URL(fileURLWithPath: String($0)) } }
+    #endif
+    return [URL(fileURLWithPath: "/Applications/Burnboard.app"),
+            FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Applications/Burnboard.app")]
+}()
+
 // Puts the verified bundle at the target without a moment where no app is there. It is copied next to the target
 // (same volume) and checked again; an existing target is exchanged with it by renamex_np(RENAME_SWAP), so the old
 // bundle ends up at the staged name and goes through disposeOld. A volume without exchange support (ENOTSUP,
@@ -940,6 +969,22 @@ if CommandLine.arguments.dropFirst().first == "--update-test" {
     exit(0)
 }
 #endif
+
+#if UPDATE_TEST
+// Test builds only: `Burnboard --handover-test` prints the copy this one would hand over to, or "none".
+if CommandLine.arguments.dropFirst().first == "--handover-test" {
+    print(newerInstalledCopy(running: URL(fileURLWithPath: testEnvironment["BURNBOARD_TEST_OWN_PATH"]!),
+                             candidates: installedPlaces)?.path ?? "none")
+    exit(0)
+}
+#endif
+
+// An older copy opens the newer installed one and ends (not in snapshot mode, which is a self-test of this copy).
+if ProcessInfo.processInfo.environment["USAGE_CLAUDE_SNAPSHOT"] == nil,
+   let newer = newerInstalledCopy(running: Bundle.main.bundleURL, candidates: installedPlaces),
+   runTool("/usr/bin/open", ["-n", newer.path]) == 0 {
+    exit(0)
+}
 
 let app = NSApplication.shared
 let delegate = AppDelegate()

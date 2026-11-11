@@ -217,7 +217,7 @@ def main():
     bins = compile_all()
     # the plain build (what build-app.sh makes) has no trace of the test hooks
     strings = subprocess.run(["strings", "-a", bins["plain"]], capture_output=True, text=True).stdout
-    assert "BURNBOARD_TEST_" not in strings and "--update-test" not in strings and "BURNBOARD_VERSION" in strings
+    assert "BURNBOARD_TEST_" not in strings and "--update-test" not in strings and "BURNBOARD_TEST_APPS" not in strings and "BURNBOARD_VERSION" in strings
     assert "BURNBOARD_TEST_" in subprocess.run(["strings", "-a", bins["app"]], capture_output=True, text=True).stdout
 
     keys = {}
@@ -486,6 +486,35 @@ def main():
         open(os.path.join(c.www, "release.json"), "w").write('{"pad": "' + "x" * 70000 + '"}')
         assert c.update() == {"error": "update_no_network"}
         c.untouched()
+
+        # hand-over at start: an older copy opens the newer installed one; nothing else qualifies
+        d = os.path.join(T, "handover")
+        mk = lambda name, version, **kw: (make_bundle(os.path.join(d, name), version, pad=False, **kw), os.path.join(d, name))[1]
+        new, same, old = mk("new/Burnboard.app", "1.3.4"), mk("same/Burnboard.app", "1.3.3"), mk("old/Burnboard.app", "1.3")
+        other = mk("other/Burnboard.app", "9.0", bundle_id="com.example.other")
+        unsigned = mk("unsigned/Burnboard.app", "9.0", sign=False)
+        altered = mk("altered/Burnboard.app", "9.0")
+        with open(os.path.join(altered, "Contents", "MacOS", "Burnboard"), "ab") as fh:
+            fh.write(b"x")                                                                    # signature no longer valid
+        badver = mk("badver/Burnboard.app", "9.x")
+        linked = os.path.join(d, "linked.app")
+        os.symlink(new, linked)
+        marked = mk("marked/Burnboard.app", "9.0")
+        sh(["xattr", "-w", "com.apple.quarantine", "0081;00000000;Test;", marked])               # macOS may still refuse it
+        me = mk("me/Burnboard.app", "1.3.3")
+        def handover(candidates, own=me, version="1.3.3"):
+            env = dict(os.environ, BURNBOARD_TEST_APPS=":".join(candidates), BURNBOARD_TEST_OWN_PATH=own, BURNBOARD_TEST_VERSION=version)
+            r = subprocess.run([bins["app"], "--handover-test"], env=env, capture_output=True, text=True, timeout=60)
+            assert r.returncode == 0, r.stderr[-1500:]
+            return r.stdout.strip()
+        assert handover([new]) == new                                                          # newer: hand over
+        assert handover([same]) == "none" and handover([old]) == "none"                        # same or older: stay
+        assert handover([other, unsigned, altered, badver, linked, marked, os.path.join(d, "missing.app")]) == "none"
+        assert handover([other, old, new]) == new                                              # the first that qualifies
+        assert handover([new], own=new, version="1.3") == "none"                               # never itself
+        assert handover([new], own=linked, version="1.3") == "none"                            # itself through a link
+        assert handover([new], version="") == "none"                                           # unknown own version
+        assert handover([]) == "none"
     finally:
         for srv in (server, server6):
             srv.shutdown()
@@ -493,9 +522,9 @@ def main():
     print("ok: updater and release tool (valid release into an existing, a new and a linked target; tampered, short and long zip; "
           "wrong signature, edited, unsigned and malformed release.json; foreign zip URL; downgrade and same version; wrong bundle id, "
           "wrong plist version, unsigned and altered bundle, two top-level items, link at top level; foreign redirect, no server, 404, "
-          "oversized release.json; swap, Trash failure, no exchange support and its roll-back, fallback-target rule, leftovers, fixed headers, "
+          "oversized release.json; swap, Trash failure, no exchange support and its roll-back, fallback-target rule, leftovers, fixed headers, hand-over to a newer installed copy, "
           "key-match check and package.sh stop; keygen never overwrites; the -O plain build has no test hooks). "
-          "Not covered: the real GitHub download, relaunch, a target on another volume, a read-only target")
+          "Not covered: the start-up hand-over block itself (snapshot skip, a failing open, the real Applications paths), the real GitHub download, relaunch, a target on another volume, a read-only target")
 
 
 if __name__ == "__main__":
