@@ -463,6 +463,8 @@ def build(prices, limits, cache_path=None, archive_path=None, log=None, root=ROO
         if cowork:  # one project for all of Cowork (the cwd of its lines is a sandbox); session = the local_<id> folder
             folder = "Cowork"
             session = next((x[6:] for x in rel[:-1] if x.startswith("local_") and len(x) > 6), rel[-1][:-6])
+        elif len(rel) < 2:  # a file lying directly in projects/, where Claude Code writes none: not a session, left out
+            continue
         else:
             folder = rel[0]
             session = rel[1] if len(rel) > 2 else rel[1][:-6]

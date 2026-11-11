@@ -195,7 +195,20 @@ def test_links_not_read():
         assert [e[0] for e in files[os.path.join(root, "-x", "s1.jsonl")][3]] == [("m1", "r1")]
 
 
+def test_stray_file():
+    """A .jsonl lying directly in projects/ does not stop the build; the sessions in project folders still count."""
+    with tempfile.TemporaryDirectory() as tmp:
+        root = os.path.join(tmp, "projects")
+        os.makedirs(os.path.join(root, "-x"))
+        for path, n in ((os.path.join(root, "stray.jsonl"), 1), (os.path.join(root, "-x", "s2.jsonl"), 2)):
+            with open(path, "w") as fh:
+                fh.write(dump(call(n)) + "\n")
+        out = B.build({}, {"windows": []}, None, None, root=root)
+        assert sum(r[-1] for r in out["facts"]) == 1, out["facts"]
+
+
 def main():
+    test_stray_file()
     summary = test_main_lines()
     test_bad_lines()
     test_bad_file_and_build()
