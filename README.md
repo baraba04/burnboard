@@ -7,10 +7,10 @@ Burnboard is an independent tool and is not affiliated with Anthropic.
 ## What it needs
 
 - macOS 12 or later.
-- Claude Code installed, and signed in for the plan limits. Whenever the app opens, and on the Setup screen, it starts your own `claude --version` and `claude auth status --json` to see whether Claude Code is there and signed in. The sign-in itself is done by `claude` in Anthropic's own flow in your browser, and the app never sees your password or token. Without a sign-in the dashboard still works from the logs.
+- Nothing else is required. Burnboard shows whatever Claude usage records it finds on the Mac: Claude Code logs, Cowork sessions, and the plan usage history the Claude desktop app keeps. Live plan limits need Claude Code installed and signed in. Whenever the app opens, and on the Setup screen, it starts your own `claude --version` and `claude auth status --json` to see whether Claude Code is there and signed in. The sign-in itself is done by `claude` in Anthropic's own flow in your browser, and the app never sees your password or token. Without a sign-in the dashboard still works from the logs.
 - Python 3 from Apple's command line tools. (Python 3 from Homebrew also works.)
 
-The first screen of the app checks these and offers one button for each missing item: "Install Apple's command line tools" (starts Apple's own installer), "Get Claude Code" (opens https://claude.com/claude-code in your browser) and "Sign in to Claude Code" (runs your own `claude auth login`, which opens Anthropic's sign-in page in your browser; the window updates when you are done). Confirm in the window that opens, then click "Check again" where the screen asks for it.
+The first screen of the app checks these and offers one button for each missing item: "Install Apple's command line tools" (starts Apple's own installer) and "Sign in to Claude Code" (runs your own `claude auth login`, which opens Anthropic's sign-in page in your browser; the window updates when you are done). Confirm in the window that opens, then click "Check again" where the screen asks for it.
 
 ## Install
 
@@ -28,6 +28,7 @@ From the source: run `./install.sh`. It needs the Xcode command line tools, buil
 
 - The Claude Code logs of the Claude folder you pick: `projects/**/*.jsonl` and the `.meta.json` files next to them. It only reads them. The default folder is `~/.claude`, or the folder in `CLAUDE_CONFIG_DIR` when the app itself has that variable (an app started from the Dock or Finder does not see variables you set only in your shell profile). You can add other folders.
 - For the default folder only, also: the other default place of Claude Code logs, `~/.config/claude/projects`, when it exists, and the Cowork sessions of the Claude desktop app, `~/Library/Application Support/Claude/local-agent-mode-sessions/**/*.jsonl`, when present. Links inside all of these folders (also inside `projects/`) are not followed. The first screen shows what was found, with file counts.
+- For the default folder only, also: the plan usage history that the Claude desktop app keeps, `~/Library/Application Support/Claude/plan-usage-history.json`, when present. It only reads it: a regular file of at most 1 MB, from the last 15 days, and only the times and the two percentages (5-hour and 7-day). The organisation id in that file is never kept, shown or written anywhere. Burnboard shows these readings as "recorded by the Claude app" when the limits are not read from Claude Code, and as a small chart.
 - Whether Claude Code is signed in, the e-mail and the plan, from `claude auth status --json`. They are shown on the first screen and not stored.
 
 ## What leaves the Mac

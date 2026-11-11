@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Check config, consent, profiles, project naming and the data command of app/cli.py.
+"""Check config, consent, profiles, project naming, the plan usage history and the data command of app/cli.py.
 
 Everything runs in temporary folders (USAGE_CLAUDE_DATA / USAGE_CLAUDE_CACHE); the real
 config, archive and cache are never touched, no helper program is started for real and
@@ -26,6 +26,7 @@ os.environ["USAGE_CLAUDE_CACHE"] = os.path.join(TMP.name, "cache")
 os.environ["USAGE_CLAUDE_OFFLINE"] = "1"
 os.environ["USAGE_CLAUDE_COWORK"] = os.path.join(TMP.name, "no-cowork")  # never the real Cowork or XDG folders
 os.environ["USAGE_CLAUDE_XDG"] = os.path.join(TMP.name, "no-xdg")
+os.environ["USAGE_CLAUDE_PLAN_HISTORY"] = os.path.join(TMP.name, "no-plan-history.json")  # never the real file
 os.environ.pop("CLAUDE_CONFIG_DIR", None)
 import build as B  # noqa: E402
 import cli  # noqa: E402
@@ -102,7 +103,12 @@ def test_config_and_consent():
     cfg["consent"]["version"] = core.CONSENT_VERSION + 1
     assert core.consent(cfg)["given"] is True
     cfg["consent"] = {"version": 1, "limits_call": True}       # version 1 (before Cowork was read) is not valid
-    assert core.CONSENT_VERSION == 2 and core.consent(cfg)["given"] is False
+    assert core.CONSENT_VERSION == 3 and core.consent(cfg)["given"] is False
+    cfg["consent"] = {"version": 2, "limits_call": True}       # version 2 (before the plan usage history was read) asks again
+    assert core.consent(cfg)["given"] is False
+    core.save_config(cfg)
+    code, out = run("status")
+    assert out["needs_setup"] is True and out["consent"] == {"given": False, "version": 2, "limits_call": True}
     cfg["consent"] = {"version": "1", "limits_call": True}
     assert core.consent(cfg)["given"] is False
     cfg["consent"] = {"version": core.CONSENT_VERSION}
@@ -180,7 +186,8 @@ def test_other_sources():
         # status.sources: counts only, links not counted, nothing read; a missing folder is found: false
         assert core.sources(default) == [{"kind": "claude_code", "found": True, "files": 1},
                                          {"kind": "claude_code_xdg", "found": True, "files": 1},
-                                         {"kind": "cowork", "found": True, "files": 2}]
+                                         {"kind": "cowork", "found": True, "files": 2},
+                                         {"kind": "plan_history", "found": False, "files": 0, "samples": 0}]
         os.environ["USAGE_CLAUDE_XDG"] = os.path.join(base, "none")
         assert core.sources(default)[1] == {"kind": "claude_code_xdg", "found": False, "files": 0}
         assert [k for k, _ in core.read_roots(default)] == ["claude_code", "claude_code_xdg", "cowork"]
@@ -203,14 +210,90 @@ def test_other_sources():
     try:
         code, st = run("status")
         assert code == 0 and [(s["kind"], s["found"], s["files"]) for s in st["sources"]] == [
-            ("claude_code", True, 1), ("claude_code_xdg", True, 1), ("cowork", True, 2)], st["sources"]
-        assert all(set(s) == {"kind", "found", "files"} for s in st["sources"])
+            ("claude_code", True, 1), ("claude_code_xdg", True, 1), ("cowork", True, 2), ("plan_history", False, 0)], st["sources"]
+        assert all(set(s) == {"kind", "found", "files"} for s in st["sources"][:3])
     finally:
         os.environ.pop("CLAUDE_CONFIG_DIR", None)
         if cfg_home:
             os.environ["CLAUDE_CONFIG_DIR"] = cfg_home
         os.environ["USAGE_CLAUDE_COWORK"] = os.path.join(TMP.name, "no-cowork")
         os.environ["USAGE_CLAUDE_XDG"] = os.path.join(TMP.name, "no-xdg")
+    reset()
+
+
+ORG = "0b8c9d1e-5f3a-4c2b-9e7d-123456789abc"   # stands in for the org id in the Claude app's file; it must never come out
+
+
+def plan_samples(*rows, now=None):
+    """Samples as the Claude app writes them: (minutes ago, five-hour %, seven-day %)."""
+    now = now or time.time()
+    return {"version": 2, "samples": [{"t": int((now - m * 60) * 1000), "org": ORG, "u": {"fh": fh, "sd": sd, "xu": 0}}
+                                      for m, fh, sd in rows]}
+
+
+def test_plan_history():
+    reset()
+    path = os.environ["USAGE_CLAUDE_PLAN_HISTORY"] = os.path.join(TMP.name, "plan-history", "plan-usage-history.json")
+    default = core.default_profile()
+    other = {"id": "0123abcd", "name": "x", "dir": os.path.join(TMP.name, "claude-home")}
+    try:
+        # absent: listed as not found, no samples
+        assert core.plan_history() == []
+        assert core.sources(default)[-1] == {"kind": "plan_history", "found": False, "files": 0, "samples": 0}
+        # present: samples of the last HISTORY_DAYS only, oldest first, values kept; the old one is left out
+        write(path, json.dumps(plan_samples((30 * 24 * 60, 5, 5), (120, 10, 20), (60, 12.4, 21))))
+        got = core.plan_history()
+        assert [(a, b) for _, a, b in got] == [(10, 20), (12, 21)] and got[0][0] < got[1][0], got
+        assert core.sources(default)[-1] == {"kind": "plan_history", "found": True, "files": 1, "samples": 2}
+        code, st = run("status")
+        assert code == 0 and st["sources"][-1] == {"kind": "plan_history", "found": True, "files": 1, "samples": 2}
+        assert ORG not in json.dumps(st)
+        # a profile that is not the default one has none
+        assert all(s["kind"] != "plan_history" for s in core.sources(other))
+
+        # bad files give no samples and no exception
+        good = plan_samples((60, 10, 20))
+        bad = {
+            "not json": "{broken",
+            "not utf-8": b"\xff\xfe\x00",
+            "a list": json.dumps([1, 2, 3]),
+            "deeply nested": "[" * 100000,
+            "samples missing": json.dumps({"version": 2}),
+            "samples not a list": json.dumps({"samples": {"t": 1}}),
+            "sample without u": json.dumps({"samples": [{"t": good["samples"][0]["t"], "org": ORG}]}),
+            "u not a dict": json.dumps({"samples": [{"t": good["samples"][0]["t"], "u": [1, 2]}]}),
+            "sample not a dict": json.dumps({"samples": [5, "x", None]}),
+            "strings instead of numbers": json.dumps({"samples": [{"t": str(good["samples"][0]["t"]), "u": {"fh": "10", "sd": "20"}},
+                                                                  {"t": good["samples"][0]["t"], "u": {"fh": "10", "sd": "20"}}]}),
+            "booleans": json.dumps({"samples": [{"t": good["samples"][0]["t"], "u": {"fh": True, "sd": False}}]}),
+            "one value missing": json.dumps({"samples": [{"t": good["samples"][0]["t"], "u": {"fh": 10}}]}),
+            "in the future": json.dumps(plan_samples((-600, 10, 20))),
+        }
+        for name, body in bad.items():
+            with open(path, "wb") as fh:
+                fh.write(body if isinstance(body, bytes) else body.encode())
+            assert core.plan_history() == [], name
+            assert core.sources(default)[-1]["found"] is False, name
+        # one good sample among bad ones is kept
+        write(path, json.dumps({"samples": good["samples"] + [{"t": "x"}, 7]}))
+        assert len(core.plan_history()) == 1
+        # a link is not followed, a folder is not read, a file over the cap is not read
+        real = os.path.join(TMP.name, "plan-history", "real.json")
+        write(real, json.dumps(good))
+        os.remove(path)
+        os.symlink(real, path)
+        assert core.plan_history() == []
+        os.remove(path)
+        os.mkdir(path)
+        assert core.plan_history() == []
+        os.rmdir(path)
+        big = json.dumps(plan_samples(*[(60, 1, 1)] * 5)).encode()
+        write(path, big.decode() + " " * core.PLAN_HISTORY_MAX)
+        assert os.path.getsize(path) > core.PLAN_HISTORY_MAX and core.plan_history() == []
+        write(path, big.decode() + " " * (core.PLAN_HISTORY_MAX - len(big)))       # exactly at the cap: read
+        assert os.path.getsize(path) == core.PLAN_HISTORY_MAX and len(core.plan_history()) == 5
+    finally:
+        os.environ["USAGE_CLAUDE_PLAN_HISTORY"] = os.path.join(TMP.name, "no-plan-history.json")
     reset()
 
 
@@ -374,6 +457,7 @@ def test_data_with_consent():
     core.start_limits, pricing.load = no_limits, fake_load
     code, out = run("data")
     assert code == 0, out
+    assert out["app_limit_history"] == [] and out["app_limit_history_cols"] == ["t", "key", "pct"] and "app_limits" not in out["meta"][0]
     notes = out["meta"][0]["notes"]
     assert {"code": "limits_off"} in notes and not any(n["code"] in ("limits_failed", "prices_offline", "unpriced",
                                                                        "approx_pricing") for n in notes), notes
@@ -459,6 +543,16 @@ def test_data_with_consent():
     assert os.path.exists(os.path.join(core.data_root(), "profiles", pid, "limit-history.jsonl"))
     assert not os.path.exists(os.path.join(core.data_root(), "limit-history.jsonl"))
 
+    # the Claude app's plan usage history belongs to the default profile only: this non-default one carries none
+    path = os.environ["USAGE_CLAUDE_PLAN_HISTORY"] = os.path.join(TMP.name, "plan-snap", "plan-usage-history.json")
+    write(path, json.dumps(plan_samples((90, 30, 40), (30, 33, 41))))
+    try:
+        os.remove(os.path.join(core.cache_root(), "profiles", pid, "last.json"))
+        code, out = run("data")
+        assert code == 0 and out["app_limit_history"] == [] and "app_limits" not in out["meta"][0]
+    finally:
+        os.environ["USAGE_CLAUDE_PLAN_HISTORY"] = os.path.join(TMP.name, "no-plan-history.json")
+
     # a profile folder that vanished is reported, not built
     run("profile-use", "--id", pid)
     os.rename(prof, prof + ".gone")
@@ -495,6 +589,59 @@ case "$1" in
 esac
 """
 SECRETS = ("ANTHROPIC_API_KEY", "ANTHROPIC_AUTH_TOKEN", "ANTHROPIC_BASE_URL", "CLAUDE_CODE_USE_BEDROCK", "CLAUDE_CODE_USE_VERTEX", "CLAUDE_CODE_USE_ANYTHING")
+
+
+def test_data_with_plan_history():
+    """Default profile, limits switched off: the app's plan usage history is carried, apart from limit_history, and
+    its org id never reaches the output. With live limit windows there is no app_limits."""
+    reset()
+    home = os.path.join(TMP.name, "plan-home")
+    os.makedirs(os.path.join(home, "projects"))                  # no logs at all
+    path = os.environ["USAGE_CLAUDE_PLAN_HISTORY"] = os.path.join(TMP.name, "plan-data", "plan-usage-history.json")
+    write(path, json.dumps(plan_samples((200, 10, 20), (100, 11, 20), (5, 12, 21))))
+    os.environ["CLAUDE_CONFIG_DIR"] = home
+    real_load, real_start = pricing.load, core.start_limits
+    pricing.load = lambda cache_dir, *a: ({}, False)
+    core.start_limits = lambda profile: None
+    try:
+        run("consent", "--limits-call", "off")
+        code, out = run("data")
+        assert code == 0, out
+        assert out["facts"] == [] and out["limits"] == [] and out["limit_history"] == []
+        assert out["app_limit_history_cols"] == ["t", "key", "pct"] and len(out["app_limit_history"]) == 6
+        assert [r[1:] for r in out["app_limit_history"]] == [["five_hour", 10], ["seven_day", 20], ["five_hour", 11],
+                                                              ["seven_day", 20], ["five_hour", 12], ["seven_day", 21]]
+        assert all(r[0].endswith("Z") and len(r[0]) == 20 for r in out["app_limit_history"])
+        app = out["meta"][0]["app_limits"]
+        assert app["five_hour"] == 12 and app["seven_day"] == 21 and app["t"] == out["app_limit_history"][-1][0]
+        assert set(app) == {"t", "five_hour", "seven_day"}
+        raw = subprocess.run([sys.executable, os.path.join(APP, "cli.py"), "last"], env=dict(os.environ), capture_output=True).stdout
+        assert raw and ORG.encode() not in raw and ORG.encode() not in json.dumps(out).encode()
+        assert not os.path.exists(os.path.join(core.data_root(), "limit-history.jsonl"))   # the app's readings are not mixed in
+        # the limits call failed (Claude Code missing): the app's readings stand in
+        core.start_limits = REAL_START_LIMITS
+        run("consent", "--limits-call", "on")
+        os.remove(core.last_path(core.default_profile()))
+        real_env = core.env
+        core.env = lambda profile=None: dict(real_env(profile), PATH=os.path.join(TMP.name, "empty-bin"))   # no `claude` on it
+        try:
+            code, out = run("data")
+        finally:
+            core.env = real_env
+        assert code == 0 and out["meta"][0]["app_limits"]["five_hour"] == 12, out["meta"][0]
+        # live windows present: no app_limits, the history still comes along
+        reading = {"type": "rate_limit_event", "rate_limit_info": {"unifiedWindows": {
+            "five_hour": {"utilization": 0.25, "resetsAt": 1900000000}}}}
+        core.start_limits = lambda profile: fake_proc(profile, json.dumps(reading))
+        os.remove(core.last_path(core.default_profile()))
+        code, out = run("data")
+        assert code == 0 and out["limits"][0]["percentUsed"] == 25 and "app_limits" not in out["meta"][0]
+        assert len(out["app_limit_history"]) == 6 and len(out["limit_history"]) == 1
+    finally:
+        pricing.load, core.start_limits = real_load, real_start
+        os.environ.pop("CLAUDE_CONFIG_DIR", None)
+        os.environ["USAGE_CLAUDE_PLAN_HISTORY"] = os.path.join(TMP.name, "no-plan-history.json")
+    reset()
 
 
 def test_limits_env():
@@ -634,11 +781,12 @@ def test_sign_in():
 
 
 def main():
-    for t in (test_config_and_consent, test_other_sources, test_profiles, test_paths_and_env, test_project_naming,
-              test_data_without_consent, test_data_with_consent, test_limits_env, test_sign_in):
+    for t in (test_config_and_consent, test_other_sources, test_plan_history, test_profiles, test_paths_and_env, test_project_naming,
+              test_data_without_consent, test_data_with_consent, test_data_with_plan_history, test_limits_env, test_sign_in):
         t()
     print("ok: config round trip and mode, consent versions, profiles (add/use/remove, bad folders, links), "
           "Cowork and ~/.config/claude read for the default profile only (one call counted once, links not followed, source counts), "
+          "the Claude app's plan usage history (bad files, links, size cap, default profile only, org id never output), "
           "project naming, data refused without consent, data with limits off and on, limits call without API key variables, sign-in (success, failure, other profile, time limit, SIGTERM, no CLI)")
 
 

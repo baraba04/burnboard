@@ -75,16 +75,18 @@ var I18N = {
     note_approx_pricing: '{detail} calls used a pricing variant this app cannot price exactly (for example fast mode); they are counted at the standard price.',
     note_limits_off: 'Plan limits were not read because that call is switched off in Setup.',
     btn_setup: 'Setup', btn_check: 'Check again', btn_add_folder: 'Add another Claude folder …', btn_remove_folder: 'Remove this folder from the list', btn_agree: 'Agree and open the dashboard',
-    btn_get_claude: 'Get Claude Code', btn_sign_in: 'Sign in to Claude Code',
-    welcome_title: 'Welcome to Burnboard', welcome_ready: 'Everything is ready. Found {n} log files of your Claude usage on this Mac.', welcome_ready_plain: 'Everything is ready.',
-    welcome_reads: 'Burnboard reads your Claude logs on this Mac and shows what they would cost.',
+    btn_sign_in: 'Sign in to Claude Code',
+    welcome_title: 'Welcome to Burnboard', welcome_ready: 'Everything is ready. Found {n} log files of your Claude usage on this Mac.',
+    welcome_ready_both: 'Everything is ready. Found {n} log files of your Claude usage and your plan usage history from the Claude app on this Mac.',
+    welcome_ready_plan: 'Everything is ready. Found your plan usage history from the Claude app on this Mac.',
+    welcome_reads: 'Burnboard reads your Claude usage records on this Mac and shows what they would cost.',
     welcome_local: 'Nothing from your logs is sent anywhere. The only download is a public price list.',
     welcome_limits: 'Also show my plan limits (one small call on my own Claude subscription per refresh)',
     btn_details: 'Show all details', btn_agree_short: 'Agree and open',
     setup_title: 'Set up Burnboard', setup_intro: 'Read what the app finds and what it does, then agree to open the dashboard.',
     setup_found: 'What was found', setup_python: 'Python {v}.',
     setup_claude_ok: 'Claude Code found{v}.',
-    setup_claude_none: 'No Claude usage was found on this Mac. Burnboard shows the usage of Claude Code and Cowork; chats on claude.ai leave no usage records on the Mac. If you want to start with Claude Code, get it and click Check again.',
+    setup_claude_none: 'No Claude Code or Cowork logs were found on this Mac. Burnboard will show what it finds.',
     setup_claude_optional: 'Claude Code is not on this Mac, so plan limits are not shown. Everything else works.',
     setup_signed_in: 'Signed in as {email}, plan {plan}.', setup_signed_in_plain: 'Signed in.',
     setup_not_signed: 'Nobody is signed in to Claude Code. Click the button: Claude Code opens Anthropic\'s own sign-in page in your browser; Burnboard never sees your password or token. The dashboard works without it, but the plan limits need a sign-in.',
@@ -96,6 +98,8 @@ var I18N = {
     profile_missing: 'folder not found',
     setup_does: 'What the app does', does_logs: 'Reads the Claude Code logs of the chosen folder on this Mac (for the default folder also the other default place, ~/.config/claude, when it exists).',
     does_cowork: 'For the default folder only: reads the Cowork sessions of the Claude desktop app on this Mac, when present.',
+    does_plan_history: 'For the default folder only: reads, read-only, the plan usage history file that the Claude desktop app keeps on this Mac (~/Library/Application Support/Claude/plan-usage-history.json), when present.',
+    src_plan_history: 'Plan usage history kept by the Claude desktop app (readings: {n}).',
     src_claude_code: 'Claude Code logs (files: {n}).', src_claude_code_xdg: 'Claude Code logs in ~/.config/claude (files: {n}).', src_cowork: 'Cowork sessions of the Claude desktop app (files: {n}).',
     does_prices: 'Downloads a public price list (from raw.githubusercontent.com) during a refresh and works out the costs itself.',
     does_limits: 'Makes one small call on your own Claude subscription at each refresh, to read the plan limits. Your own Claude Code makes it, and it may include your own Claude Code instruction files, as it does for any session. No log content or usage data is in it.',
@@ -105,7 +109,7 @@ var I18N = {
     never_secrets: 'No reading or storing of passwords or tokens.', never_telemetry: 'No telemetry.', never_bg: 'Nothing runs between your clicks.',
     setup_error: 'That did not work: {msg}', err_bad_profile_dir: 'That folder is not a Claude folder: it has no "projects" folder inside.', err_profile_exists: 'That folder is already in the list.',
     err_no_python: 'Python 3 was not found.', err_failed: 'That could not be started.',
-    foot: 'Source: Claude Code logs on this Mac, priced with a public price list. Refresh reads the logs, downloads that price list from raw.githubusercontent.com and makes one small call on the Claude subscription to get the limit percentages. Nothing else is sent anywhere, and nothing runs between clicks. Sessions from claude.ai, the phone and other computers are not included, so the limit percentages cover more than the costs shown here. Cost is an estimate at API prices; a Claude subscription does not bill it. Cache savings is how much more the cached tokens would cost at the full input price. Hours and days are in local time.',
+    foot: 'Source: the Claude usage records on this Mac (Claude Code logs, Cowork sessions, the plan usage history of the Claude app), priced with a public price list. Refresh reads them, downloads that price list from raw.githubusercontent.com and, when Claude Code is there and the limits switch is on, makes one small call on the Claude subscription to get the limit percentages. Nothing else is sent anywhere, and nothing runs between clicks. Sessions from claude.ai, the phone and other computers are not included, so the limit percentages cover more than the costs shown here. Cost is an estimate at API prices; a Claude subscription does not bill it. Cache savings is how much more the cached tokens would cost at the full input price. Hours and days are in local time.',
     aria_period: 'Period', aria_metric: 'Measure', aria_lang: 'Language',
     lead: 'Over {period}, {tokens} tokens were processed, which would cost {cost} at API prices. The costliest model was {model}, the costliest project {project}.',
     period_24h: 'the last 24 hours', period_range: 'the period {from} to {to}',
@@ -116,6 +120,8 @@ var I18N = {
     lim_reset: 'Resets in {d} ({at})', lim_passed: 'Reset since the snapshot. Refresh for the current state.',
     lim_week: 'This week on this Mac: {cost}, which is {per} per 1%', lim_week_only: 'This week on this Mac: {cost}',
     lim_pace: 'At this pace by reset: {pct}', lim_none: 'Plan limits were not read for this snapshot.',
+    lim_app_at: 'As recorded by the Claude app at {time}', h_app_hist: 'Plan usage over time (from the Claude app)',
+    no_usage: 'No Claude Code or Cowork usage was found on this Mac. Burnboard shows whatever is there; chats in the Claude app leave no token records on the Mac.',
     big_cost: 'API-equivalent cost', big_tokens: 'tokens processed', span_24h: ', last 24 hours', span_days: ', {n} days',
     delta: 'vs the previous {span} ({prev})', span2_24h: '24 hours', span2_days: '{n} days',
     delta_nodata: 'Not enough data to compare with the previous period.', delta_zero: 'No usage in the previous period.',
@@ -162,16 +168,18 @@ var I18N = {
     note_approx_pricing: '{detail} klicev je uporabilo različico cenitve, ki je aplikacija ne more izračunati natančno (na primer hitri način); obračunani so po standardni ceni.',
     note_limits_off: 'Omejitve niso bile prebrane, ker je ta klic izklopljen v nastavitvi.',
     btn_setup: 'Nastavitev', btn_check: 'Preveri znova', btn_add_folder: 'Dodaj drugo mapo Claude …', btn_remove_folder: 'Odstrani to mapo s seznama', btn_agree: 'Soglašam, odpri nadzorno ploščo',
-    btn_get_claude: 'Pridobi Claude Code', btn_sign_in: 'Prijava v Claude Code',
-    welcome_title: 'Dobrodošel v Burnboard', welcome_ready: 'Vse je pripravljeno. Na tem Macu je najdenih {n} dnevnikov tvoje uporabe Claude.', welcome_ready_plain: 'Vse je pripravljeno.',
-    welcome_reads: 'Burnboard bere tvoje dnevnike Claude na tem Macu in pokaže, koliko bi stali.',
+    btn_sign_in: 'Prijava v Claude Code',
+    welcome_title: 'Dobrodošel v Burnboard', welcome_ready: 'Vse je pripravljeno. Na tem Macu je najdenih {n} dnevnikov tvoje uporabe Claude.',
+    welcome_ready_both: 'Vse je pripravljeno. Na tem Macu je najdenih {n} dnevnikov tvoje uporabe Claude in zgodovina porabe tvoje naročnine iz aplikacije Claude.',
+    welcome_ready_plan: 'Vse je pripravljeno. Na tem Macu je najdena zgodovina porabe tvoje naročnine iz aplikacije Claude.',
+    welcome_reads: 'Burnboard bere zapise o tvoji uporabi Claude na tem Macu in pokaže, koliko bi stali.',
     welcome_local: 'Nič iz tvojih dnevnikov se nikamor ne pošilja. Edini prenos je javni cenik.',
     welcome_limits: 'Pokaži tudi omejitve moje naročnine (en majhen klic prek moje naročnine Claude ob vsaki osvežitvi)',
     btn_details: 'Pokaži vse podrobnosti', btn_agree_short: 'Soglašam in odpri',
     setup_title: 'Nastavitev Burnboard', setup_intro: 'Preberi, kaj aplikacija najde in kaj dela, nato potrdi, da se odpre nadzorna plošča.',
     setup_found: 'Kaj je najdeno', setup_python: 'Python {v}.',
     setup_claude_ok: 'Claude Code je najden{v}.',
-    setup_claude_none: 'Na tem Macu ni najdene nobene porabe Claude. Burnboard prikazuje porabo Claude Code in Cowork; klepeti na claude.ai na Macu ne pustijo zapisov o porabi. Če hočeš začeti s Claude Code, ga pridobi in klikni Preveri znova.',
+    setup_claude_none: 'Na tem Macu ni najdenih dnevnikov Claude Code ali Cowork. Burnboard bo prikazal, kar najde.',
     setup_claude_optional: 'Claude Code ni na tem Macu, zato omejitve naročnine niso prikazane. Vse ostalo deluje.',
     setup_signed_in: 'Prijavljen kot {email}, naročnina {plan}.', setup_signed_in_plain: 'Prijavljen.',
     setup_not_signed: 'V Claude Code nihče ni prijavljen. Klikni gumb: Claude Code odpre Anthropicovo lastno stran za prijavo v brskalniku; Burnboard nikoli ne vidi tvojega gesla ali žetona. Nadzorna plošča deluje tudi brez prijave, omejitve naročnine pa jo potrebujejo.',
@@ -183,6 +191,8 @@ var I18N = {
     profile_missing: 'mape ni',
     setup_does: 'Kaj aplikacija dela', does_logs: 'Bere dnevnike Claude Code izbrane mape na tem Macu (pri privzeti mapi tudi drugo privzeto mesto, ~/.config/claude, če obstaja).',
     does_cowork: 'Samo pri privzeti mapi: bere seje Cowork namizne aplikacije Claude na tem Macu, če obstajajo.',
+    does_plan_history: 'Samo pri privzeti mapi: samo za branje prebere datoteko z zgodovino porabe naročnine, ki jo namizna aplikacija Claude hrani na tem Macu (~/Library/Application Support/Claude/plan-usage-history.json), če obstaja.',
+    src_plan_history: 'Zgodovina porabe naročnine, ki jo hrani namizna aplikacija Claude (odčitkov: {n}).',
     src_claude_code: 'Dnevniki Claude Code (datotek: {n}).', src_claude_code_xdg: 'Dnevniki Claude Code v ~/.config/claude (datotek: {n}).', src_cowork: 'Seje Cowork namizne aplikacije Claude (datotek: {n}).',
     does_prices: 'Ob osvežitvi prenese javni cenik (z raw.githubusercontent.com) in stroške izračuna sam.',
     does_limits: 'Ob vsaki osvežitvi naredi en majhen klic prek tvoje lastne naročnine Claude, da prebere omejitve. Klic opravi tvoj lastni Claude Code in lahko vključi tvoje lastne datoteke z navodili za Claude Code, kot pri vsaki seji. V klicu ni vsebine dnevnikov ali podatkov o porabi.',
@@ -192,7 +202,7 @@ var I18N = {
     never_secrets: 'Ne bere in ne shranjuje gesel ali žetonov.', never_telemetry: 'Ne pošilja telemetrije.', never_bg: 'Med kliki ne teče nič.',
     setup_error: 'Ni uspelo: {msg}', err_bad_profile_dir: 'Ta mapa ni mapa Claude: v njej ni mape "projects".', err_profile_exists: 'Ta mapa je že na seznamu.',
     err_no_python: 'Python 3 ni najden.', err_failed: 'Tega ni bilo mogoče zagnati.',
-    foot: 'Vir: dnevniki Claude Code na tem Macu, ocenjeni po javnem ceniku. Osveži prebere dnevnike, prenese ta cenik z raw.githubusercontent.com in naredi en majhen klic prek naročnine Claude, da dobi odstotke omejitev. Nič drugega se nikamor ne pošilja, med kliki pa ne teče nič. Seje iz claude.ai, telefona in drugih računalnikov niso zajete, zato odstotki omejitev pokrivajo več kot stroški tukaj. Strošek je ocena po API cenah, naročnina Claude ga ne zaračuna. Prihranek predpomnilnika pove, koliko več bi stali prebrani žetoni po polni vhodni ceni. Ure in dnevi so v lokalnem času.',
+    foot: 'Vir: zapisi o uporabi Claude na tem Macu (dnevniki Claude Code, seje Cowork, zgodovina porabe naročnine iz aplikacije Claude), ocenjeni po javnem ceniku. Osveži jih prebere, prenese ta cenik z raw.githubusercontent.com in, če je Claude Code nameščen in je stikalo za omejitve vklopljeno, naredi en majhen klic prek naročnine Claude, da dobi odstotke omejitev. Nič drugega se nikamor ne pošilja, med kliki pa ne teče nič. Seje iz claude.ai, telefona in drugih računalnikov niso zajete, zato odstotki omejitev pokrivajo več kot stroški tukaj. Strošek je ocena po API cenah, naročnina Claude ga ne zaračuna. Prihranek predpomnilnika pove, koliko več bi stali prebrani žetoni po polni vhodni ceni. Ure in dnevi so v lokalnem času.',
     aria_period: 'Obdobje', aria_metric: 'Mera', aria_lang: 'Jezik',
     lead: 'V obdobju {period} je bilo obdelanih {tokens} žetonov, kar bi po API cenah stalo {cost}. Največ stroška je odnesel model {model}, največ projekt {project}.',
     period_24h: 'zadnjih 24 ur', period_range: '{from} do {to}',
@@ -203,6 +213,8 @@ var I18N = {
     lim_reset: 'Ponastavitev čez {d} ({at})', lim_passed: 'Ponastavljeno po posnetku. Osveži za novo stanje.',
     lim_week: 'Ta teden na tem Macu: {cost}, to je {per} na 1 %', lim_week_only: 'Ta teden na tem Macu: {cost}',
     lim_pace: 'Ob tem tempu do ponastavitve: {pct}', lim_none: 'Omejitve ob posnetku niso bile prebrane.',
+    lim_app_at: 'Kot jih je zabeležila aplikacija Claude ob {time}', h_app_hist: 'Poraba naročnine skozi čas (iz aplikacije Claude)',
+    no_usage: 'Na tem Macu ni najdene porabe Claude Code ali Cowork. Burnboard prikaže, kar je tam; klepeti v aplikaciji Claude na Macu ne pustijo zapisov o žetonih.',
     big_cost: 'ekvivalent API stroška', big_tokens: 'obdelanih žetonov', span_24h: ', zadnjih 24 ur', span_days: ', {n} dni',
     delta: 'glede na prejšnjih {span} ({prev})', span2_24h: '24 ur', span2_days: '{n} dni',
     delta_nodata: 'Za primerjavo s prejšnjim obdobjem ni dovolj podatkov.', delta_zero: 'V prejšnjem obdobju ni bilo porabe.',
@@ -372,7 +384,8 @@ function renderSetup() {
   }
   function list(keys) { ul = el('ul'); keys.forEach(function (k) { item('', T(k)); }); box.appendChild(ul); }
   function button(key, alt, fn) { var b = el('button', 'l-btn' + (alt ? ' l-alt' : ''), T(key)); b.type = 'button'; b.addEventListener('click', fn); return b; }
-  var FOUND = 0; (st.sources || []).forEach(function (s) { if (s.found) FOUND += s.files || 0; });
+  var FOUND = 0, PLAN = 0;  // log files found; readings in the Claude app's plan usage history
+  (st.sources || []).forEach(function (s) { if (s.kind === 'plan_history') PLAN = s.samples || 0; else if (s.found) FOUND += s.files || 0; });
   box.replaceChildren();
   box.classList.toggle('l-welcome', !SETUP.more);
   if (!SETUP.more) {
@@ -380,10 +393,9 @@ function renderSetup() {
     // Everything else is one click away under "Show all details".
     var n = FOUND;
     box.appendChild(el('h2', '', T('welcome_title')));
-    if (c.found || n) box.appendChild(el('p', '', n ? T('welcome_ready', { n: n }) : T('welcome_ready_plain')));
+    box.appendChild(el('p', '', n && PLAN ? T('welcome_ready_both', { n: n }) : n ? T('welcome_ready', { n: n }) : PLAN ? T('welcome_ready_plan') : T('setup_claude_none')));
     ul = el('ul');
-    if (!c.found) { if (!n) item('bad', T('setup_claude_none'), ['btn_get_claude', 'openClaudeCodeSite']); }
-    else if (c.loggedIn !== true) item('bad', T(c.loggedIn === false ? 'setup_not_signed' : 'setup_signin_unknown'), ['btn_sign_in', 'signIn']);
+    if (c.found && c.loggedIn !== true) item('bad', T(c.loggedIn === false ? 'setup_not_signed' : 'setup_signin_unknown'), ['btn_sign_in', 'signIn']);
     item('l-muted', T('welcome_reads')); item('l-muted', T('welcome_local'));
     box.appendChild(ul);
     var wl = el('label'), wc = el('input');
@@ -396,11 +408,8 @@ function renderSetup() {
       box.appendChild(el('p', 'l-err', wm !== 'err_' + SETUP.err ? wm : T('setup_error', { msg: SETUP.err })));
     }
     var wrow = el('div', 'l-row'), wgo = button('btn_agree_short', false, agree);
-    wgo.classList.add('l-big'); wgo.disabled = !c.found && !n;  // nothing to show only when there is neither Claude Code nor any log
+    wgo.classList.add('l-big');
     wrow.appendChild(wgo);
-    if (!c.found && !n) wrow.appendChild(button('btn_check', true, function () {
-      getStatus().then(function (s2) { SETUP.st = s2; SETUP.err = null; renderSetup(); }).catch(function () { SETUP.err = 'bridge'; renderSetup(); });
-    }));
     wrow.appendChild(button('btn_details', true, function () { SETUP.more = true; renderSetup(); }));
     box.appendChild(wrow);
     return;
@@ -411,13 +420,14 @@ function renderSetup() {
   box.appendChild(el('h3', '', T('setup_found')));
   ul = el('ul');
   item('ok', T('setup_python', { v: st.python }));
-  if (!c.found) { if (FOUND) item('', T('setup_claude_optional')); else item('bad', T('setup_claude_none'), ['btn_get_claude', 'openClaudeCodeSite']); }
+  if (!c.found) { if (FOUND || PLAN) item('', T('setup_claude_optional')); }
   else {
     item('ok', T('setup_claude_ok', { v: c.version ? ' (' + c.version + ')' : '' }));
     if (c.loggedIn === true) item('ok', c.email && c.subscriptionType ? T('setup_signed_in', { email: c.email, plan: c.subscriptionType }) : T('setup_signed_in_plain'));
     else item('bad', T(c.loggedIn === false ? 'setup_not_signed' : 'setup_signin_unknown'), ['btn_sign_in', 'signIn']);
   }
-  (st.sources || []).forEach(function (s) { if (s.found) item('ok', T('src_' + s.kind, { n: s.files })); });
+  (st.sources || []).forEach(function (s) { if (s.found) item('ok', T('src_' + s.kind, { n: s.kind === 'plan_history' ? s.samples : s.files })); });
+  if (!FOUND && !PLAN) item('', T('setup_claude_none'));
   box.appendChild(ul);
   var row = el('div', 'l-row');
   row.appendChild(button('btn_check', true, function () {
@@ -442,7 +452,7 @@ function renderSetup() {
   box.appendChild(row);
 
   box.appendChild(el('h3', '', T('setup_does')));
-  list(['does_logs', 'does_cowork', 'does_prices', 'does_limits', 'does_signin']);
+  list(['does_logs', 'does_cowork', 'does_plan_history', 'does_prices', 'does_limits', 'does_signin']);
   var label = el('label'), cb = el('input'), txt = el('span');
   cb.type = 'checkbox'; cb.checked = SETUP.limits;
   cb.addEventListener('change', function () { SETUP.limits = cb.checked; });
@@ -459,9 +469,7 @@ function renderSetup() {
     box.appendChild(el('p', 'l-err', m !== 'err_' + SETUP.err ? m : T('setup_error', { msg: SETUP.err })));
   }
   row = el('div', 'l-row');
-  var go = button('btn_agree', false, agree);
-  go.disabled = !c.found && !FOUND;  // nothing to show only without Claude Code and without any log; being signed out does not block
-  row.appendChild(go);
+  row.appendChild(button('btn_agree', false, agree));
   box.appendChild(row);
 }
 
@@ -474,7 +482,7 @@ window.addEventListener('DOMContentLoaded', function () {
   applyStatic();
   document.getElementById('l-refresh').addEventListener('click', loadFresh);
   document.querySelectorAll('[data-lang]').forEach(function (b) { b.addEventListener('click', function () { setLang(b.getAttribute('data-lang')); }); });
-  window.addEventListener('resize', function () { if (RAW) { dash.draw('chart'); dash.draw('weekchart'); } });
+  window.addEventListener('resize', function () { if (RAW) { dash.draw('chart'); dash.draw('weekchart'); dash.draw('appchart'); } });
   if (!BRIDGE) return startDash();
   var sb = document.getElementById('l-setup-btn');
   sb.hidden = false; sb.addEventListener('click', openSetup);

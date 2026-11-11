@@ -20,6 +20,9 @@
 .u-meter { height: 6px; border-radius: 3px; background: var(--color-border-line); overflow: hidden; margin: 8px 0 6px; }
 .u-meter span { display: block; height: 100%; border-radius: 3px; }
 .u-lim-sub { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); line-height: 1.5; }
+.u-lim-note { grid-column: 1 / -1; }
+.u-nousage .u-filters, .u-nousage .u-ctrl, .u-nousage #overview, .u-nousage #totals, .u-nousage #types, .u-nousage .u-two,
+.u-nousage #heat, .u-nousage #subagents, .u-nousage #sessions, .u-nousage #calls, .u-nolimits #limits, .u-applim #limits .u-week { display: none; }
 .u-lim-sub b { color: var(--color-fg); font-weight: var(--cds-font-weight-medium); font-variant-numeric: tabular-nums; }
 
 .u-top { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 2.4fr); gap: var(--cds-gap-xl); }
@@ -105,6 +108,7 @@
   </header>
 
   <div class="u-filters" data-draw="filters"></div>
+  <div hidden data-draw="wrapstate"></div>
 
   <section id="limits">
     <h2 class="u-h"><span data-i18n="h_limits"></span> <span class="u-hint" data-i18n="h_limits_hint"></span></h2>
@@ -123,6 +127,12 @@
         </table>
       </div>
     </div>
+  </section>
+
+  <section id="applimits" hidden>
+    <h2 class="u-h" data-i18n="h_app_hist"></h2>
+    <div class="u-weekchart" data-draw="appchart">—</div>
+    <div class="u-legend" data-draw="applegend"></div>
   </section>
 
   <section class="u-top" id="overview">
@@ -276,6 +286,7 @@ dash.loader('session_use', { fn: function (a) {
 } });
 dash.loader('limit_history', { fn: function (a) { return a.answer.limit_history ? rowsFrom(a.answer, 'limit_history', 'limit_history_cols') : []; } });
 function optRows(a, rowsKey, colsKey) { return a.answer[rowsKey] ? rowsFrom(a.answer, rowsKey, colsKey) : []; }
+dash.loader('app_limit_history', { fn: function (a) { return optRows(a, 'app_limit_history', 'app_limit_history_cols'); } });
 dash.loader('calls', { fn: function (a) { return optRows(a, 'calls', 'call_cols'); } });
 dash.loader('compactions', { fn: function (a) { return optRows(a, 'compactions', 'compaction_cols'); } });
 dash.loader('errors', { fn: function (a) { return optRows(a, 'errors', 'error_cols'); } });
@@ -283,7 +294,7 @@ dash.loader('via_hint', { fn: function (a) { return a.answer.via_hint || {}; } }
 dash.loader('sess_ctx', { fn: function (a) { return a.answer.sess_ctx || {}; } });
 dash.loader('status', { fn: function (a) {
   var m = a.answer.meta[0], lim = a.answer.limits.length ? a.answer.limits : [{ key: null, percentUsed: null, resetsAt: null }];
-  return lim.map(function (l) { return { key: l.key, percentUsed: l.percentUsed, resetsAt: l.resetsAt, generated_at: m.generated_at, first_hour: m.first_hour, restored: (m.check && m.check.restored) || [] }; });
+  return lim.map(function (l) { return { key: l.key, percentUsed: l.percentUsed, resetsAt: l.resetsAt, app: m.app_limits || null, generated_at: m.generated_at, first_hour: m.first_hour, restored: (m.check && m.check.restored) || [] }; });
 } });
 
 (function () {
@@ -345,7 +356,7 @@ dash.loader('status', { fn: function (a) {
     rank.forEach(function (m, i) { colorOf[m] = i < dash.colors.length ? dash.colors[i] : 'var(--cds-chart-muted)'; });
     var m0 = st.data[0];
     state.session = null;  // session numbers belong to one snapshot
-    memo = { src: g.data, st: st.data, views: {}, base: { rows: rows, now: new Date(m0.generated_at), first: new Date(m0.first_hour), limits: st.data.filter(function (l) { return l.key; }), colorOf: colorOf, restored: new Set(m0.restored || []) } };
+    memo = { src: g.data, st: st.data, views: {}, base: { rows: rows, now: new Date(m0.generated_at), first: new Date(m0.first_hour || m0.generated_at), app: m0.app || null, limits: st.data.filter(function (l) { return l.key; }), colorOf: colorOf, restored: new Set(m0.restored || []) } };
     return memo.base;
   }
   function sums(rows) {
@@ -444,7 +455,16 @@ dash.loader('status', { fn: function (a) {
   });
   R('sessnote', function (e) { e.textContent = (state.filter.model != null || state.filter.agent != null || state.filter.effort != null || state.filter.via != null) ? t('sess_nofilter') : ''; });
 
+  // Which parts of the page apply to what was found: no usage rows hides the usage sections, readings recorded by the
+  // Claude app replace the limits that need a reset time.
+  R('wrapstate', function (e, v) {
+    var w = e.closest('.u-wrap'), none = !v.b.rows.length;
+    w.classList.toggle('u-nousage', none);
+    w.classList.toggle('u-nolimits', none && !v.b.limits.length && !v.b.app);
+    w.classList.toggle('u-applim', !v.b.limits.length && !!v.b.app);
+  });
   R('lead', function (e, v) {
+    if (!v.b.rows.length) { e.textContent = t('no_usage'); return; }
     var cost = v.tot.cost || 1;
     rich(e, 'lead', {
       period: v.hourly ? t('period_24h') : t('period_range', { from: fDayY(v.start), to: fDayY(v.b.now) }),
@@ -764,8 +784,21 @@ dash.loader('status', { fn: function (a) {
       box.append(top, meter, sub);
       e.appendChild(box);
     });
-    if (!v.b.limits.length) e.textContent = t('lim_none');
+    if (v.b.limits.length) return;
+    if (v.b.app) { appLimits(e, v.b.app); return; }
+    e.textContent = t('lim_none');
   });
+  // The percentages the Claude app recorded: no reset time is known, so no countdown, pace or room left.
+  function appLimits(e, app) {
+    ['five_hour', 'seven_day'].forEach(function (key) {
+      var pct = +app[key], box = el('div'), top = el('div', 'u-lim-top'), meter = el('div', 'u-meter'), fill = el('span');
+      top.append(el('span', null, t('lim_' + key)), el('b', null, fmtPct0(pct)));
+      fill.style.width = Math.min(100, pct) + '%';
+      fill.style.background = pct >= 90 ? 'var(--color-bad)' : pct >= 70 ? 'var(--color-warn)' : 'var(--color-ok)';
+      meter.appendChild(fill); box.append(top, meter); e.appendChild(box);
+    });
+    e.appendChild(el('div', 'u-lim-sub u-lim-note', t('lim_app_at', { time: fDT(new Date(app.t)) })));
+  }
 
   // This week's limit: the measured percentage now, spread back over the week by this Mac's cost,
   // plus every reading taken at a refresh, an even-pace line and a straight projection to the reset.
@@ -812,6 +845,37 @@ dash.loader('status', { fn: function (a) {
     [['wk_est', dash.colors[0], 'line'], ['wk_meas', 'var(--color-fg)', 'dot'], ['wk_pace', 'var(--cds-chart-muted)', 'line']].forEach(function (x) {
       var d = el('span'), i = el('i', x[2]); i.style.background = x[1];
       d.append(i, document.createTextNode(t(x[0]))); e.appendChild(d);
+    });
+  });
+
+  // Plan usage over time as the Claude app recorded it: sparse readings, two lines, 0 to 100 %.
+  var APP_KEYS = [['five_hour', dash.colors[0]], ['seven_day', dash.colors[1]]];
+  dash.draw('appchart', function (box) {
+    var sec = box.closest('section'), rows = dash.data('app_limit_history').data.map(function (r) { return { t: new Date(r.t), key: r.key, p: +r.pct }; });
+    sec.hidden = !rows.length;
+    if (!rows.length) { box.replaceChildren(); return; }
+    var W = Math.max(280, box.clientWidth), H = 190, mt = 10, mb = 24, mr = 12, ml = 40;
+    var ext = d3.extent(rows, function (r) { return +r.t; }), pad = ext[0] === ext[1] ? 36e5 : 0;
+    var ymax = Math.max(100, d3.max(rows, function (r) { return r.p; }));
+    var x = d3.scaleTime().domain([new Date(ext[0] - pad), new Date(ext[1] + pad)]).range([ml, W - mr]), y = d3.scaleLinear().domain([0, ymax]).range([H - mb, mt]);
+    var svg = d3.create('svg').attr('width', '100%').attr('height', H).attr('viewBox', '0 0 ' + W + ' ' + H).attr('role', 'img').attr('aria-label', t('h_app_hist'));
+    var yt = [0, 50, 100], xt = x.ticks(Math.max(2, Math.floor((W - ml) / 90)));
+    svg.append('g').selectAll('line').data(yt).join('line').attr('x1', ml).attr('x2', W - mr).attr('y1', y).attr('y2', y).style('stroke', 'var(--cds-chart-grid)');
+    svg.append('g').selectAll('text').data(yt).join('text').attr('x', ml - 8).attr('y', y).attr('dy', '0.32em').attr('text-anchor', 'end').text(function (d) { return fmtPct0(d); });
+    svg.append('g').selectAll('text').data(xt).join('text').attr('x', x).attr('y', H - 6).attr('text-anchor', 'middle').text(ext[1] - ext[0] < 2 * 864e5 ? d3.timeFormat('%H:%M') : fDay);
+    APP_KEYS.forEach(function (k) {
+      var pts = rows.filter(function (r) { return r.key === k[0]; });
+      svg.append('path').attr('d', d3.line().x(function (d) { return x(d.t); }).y(function (d) { return y(d.p); })(pts)).style('fill', 'none').style('stroke', k[1]).style('stroke-width', 2);
+      svg.append('g').selectAll('circle').data(pts).join('circle').attr('cx', function (d) { return x(d.t); }).attr('cy', function (d) { return y(d.p); }).attr('r', 3).style('fill', k[1])
+        .append('title').text(function (d) { return fDT(d.t) + ' · ' + fmtPct0(d.p); });
+    });
+    box.replaceChildren(svg.node());
+  });
+  dash.draw('applegend', function (e) {
+    e.replaceChildren();
+    APP_KEYS.forEach(function (k) {
+      var d = el('span'), i = el('i', 'line'); i.style.background = k[1];
+      d.append(i, document.createTextNode(t('lim_' + k[0]))); e.appendChild(d);
     });
   });
 

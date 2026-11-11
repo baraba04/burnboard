@@ -5,16 +5,18 @@ Profile: one Claude config folder (default ~/.claude, or $CLAUDE_CONFIG_DIR when
 default profile keeps its data where it always was; any other profile gets profiles/<id>/
 under both the data folder and the cache folder. The data and cache folders can be moved
 with USAGE_CLAUDE_DATA and USAGE_CLAUDE_CACHE (the tests do this); the other places that are read can be
-moved with USAGE_CLAUDE_COWORK and USAGE_CLAUDE_XDG.
+moved with USAGE_CLAUDE_COWORK, USAGE_CLAUDE_XDG and USAGE_CLAUDE_PLAN_HISTORY.
 """
 import fcntl
 import glob
 import hashlib
 import json
+import math
 import os
 import re
 import shutil
 import signal
+import stat
 import subprocess
 import sys
 import time
@@ -24,7 +26,8 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 HOME = os.path.expanduser("~")
 HISTORY_DAYS = 15  # how much limit history the page receives
-CONSENT_VERSION = 2  # 2: Cowork sessions of the Claude desktop app are read too. Raise when the app starts doing something the user has not agreed to
+PLAN_HISTORY_MAX = 1 << 20  # bytes; a larger plan usage history file is not read
+CONSENT_VERSION = 3  # 2: Cowork sessions of the Claude desktop app are read too; 3: and its plan usage history file. Raise when the app starts doing something the user has not agreed to
 DEFAULT_ID = "default"
 ID_RE = re.compile(r"^[0-9a-f]{8}$")
 
@@ -54,6 +57,12 @@ def cowork_root():
 def xdg_root():
     # The other default place of Claude Code logs; read for the default profile only.
     return os.environ.get("USAGE_CLAUDE_XDG") or os.path.join(HOME, ".config", "claude", "projects")
+
+
+def plan_history_path():
+    # Plan usage history kept by the Claude desktop app; read for the default profile only.
+    return os.environ.get("USAGE_CLAUDE_PLAN_HISTORY") or os.path.join(
+        HOME, "Library", "Application Support", "Claude", "plan-usage-history.json")
 
 
 def config_path():
@@ -144,11 +153,54 @@ def read_roots(profile):
     return out
 
 
+def plan_history():
+    """[(unix seconds, five_hour %, seven_day %)] of the last HISTORY_DAYS from the Claude desktop app's plan usage
+    history, oldest first. Read-only: a regular file only (a link is not followed), at most PLAN_HISTORY_MAX bytes.
+    Any other shape or type gives no samples, never an exception. The org id in the file is never looked at."""
+    try:
+        fd = os.open(plan_history_path(), os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK)
+    except OSError:
+        return []
+    try:
+        if not stat.S_ISREG(os.fstat(fd).st_mode):
+            return []
+        with os.fdopen(fd, "rb", closefd=False) as fh:
+            raw = fh.read(PLAN_HISTORY_MAX + 1)
+        if len(raw) > PLAN_HISTORY_MAX:
+            return []
+        doc = json.loads(raw.decode("utf-8"))
+    except (OSError, ValueError, RecursionError):
+        return []
+    finally:
+        os.close(fd)
+    items = doc.get("samples") if isinstance(doc, dict) else None
+    if not isinstance(items, list):
+        return []
+
+    def num(x):
+        return isinstance(x, (int, float)) and not isinstance(x, bool) and math.isfinite(x)
+    now = time.time()
+    cutoff = now - HISTORY_DAYS * 86400
+    out = []
+    for s in items:
+        u = s.get("u") if isinstance(s, dict) else None
+        if not isinstance(u, dict) or not (num(s.get("t")) and num(u.get("fh")) and num(u.get("sd"))):
+            continue
+        if cutoff <= s["t"] / 1000 <= now:
+            out.append((s["t"] / 1000, round(u["fh"]), round(u["sd"])))
+    return sorted(out)
+
+
 def sources(profile):
-    """What is there to read, by counting files without opening them: [{kind, found, files}]."""
+    """What is there to read: [{kind, found, files}], the log folders by counting files without opening them. The
+    default profile also lists the plan usage history (files: 0 or 1, samples: readings of the last HISTORY_DAYS)."""
     import build as B
-    return [{"kind": kind, "found": os.path.isdir(top), "files": sum(1 for _ in B.jsonl_files(top))}
-            for kind, top in read_roots(profile)]
+    out = [{"kind": kind, "found": os.path.isdir(top), "files": sum(1 for _ in B.jsonl_files(top))}
+           for kind, top in read_roots(profile)]
+    if is_default(profile):
+        n = len(plan_history())
+        out.append({"kind": "plan_history", "found": n > 0, "files": 1 if n else 0, "samples": n})
+    return out
 
 
 def naming(cfg):
@@ -315,7 +367,8 @@ def fresh(profile, limits_call=True):
             notes.append({"code": "limits_failed", "why": limits["error"]})
     else:
         limits = {"windows": []}
-        notes.append({"code": "limits_failed", "why": "no_claude"} if limits_call else {"code": "limits_off"})
+        if not limits_call:
+            notes.append({"code": "limits_off"})  # without Claude Code there is simply no call: no note, nothing to fix
     roots, groups = naming(load_config())
     srcs = read_roots(profile)
     out = B.build(prices, limits, os.path.join(cache_dir(profile), "parsed.pickle"),
@@ -323,6 +376,14 @@ def fresh(profile, limits_call=True):
                   root=srcs[0][1], project_roots=roots, group_folders=groups, extra=srcs[1:])
     out["limit_history_cols"] = ["t", "key", "pct", "resetsAt"]
     out["limit_history"] = record_limits(profile, limits, out["meta"][0]["generated_at"])
+    # What the Claude desktop app recorded: no reset times, so kept apart from limit_history. Shown in place of the
+    # limits when the limits call gave none.
+    app = plan_history() if is_default(profile) else []
+    iso = lambda ts: datetime.fromtimestamp(ts, timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    out["app_limit_history_cols"] = ["t", "key", "pct"]
+    out["app_limit_history"] = [[iso(ts), key, pct] for ts, fh, sd in app for key, pct in (("five_hour", fh), ("seven_day", sd))]
+    if app and not limits.get("windows"):
+        out["meta"][0]["app_limits"] = {"t": iso(app[-1][0]), "five_hour": app[-1][1], "seven_day": app[-1][2]}
     chk = out["meta"][0]["check"]
     if chk["unpriced_models"]:
         notes.append({"code": "unpriced", "detail": ", ".join(chk["unpriced_models"])})
