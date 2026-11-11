@@ -14,7 +14,7 @@ The first screen of the app checks these and offers one button for each missing 
 
 ## Install
 
-From the download (`Burnboard-<version>.zip`): open the zip if your browser has not done it already; it holds one thing, Burnboard. Drag it to your Applications folder if you want to keep it there (it also runs from where it is). The app is not signed with an Apple Developer ID, so macOS blocks it the first time:
+From the download (`Burnboard-<version>.dmg`): open it and drag Burnboard onto the Applications folder shown next to it, then open Burnboard from Applications. The app is not signed with an Apple Developer ID, so macOS blocks it the first time:
 
 1. Double-click Burnboard. macOS says it cannot verify the developer. Click Done.
 2. Open System Settings, then Privacy & Security, and scroll to the Security section. Next to the message that "Burnboard" was blocked to protect your Mac, click Open Anyway.
@@ -22,7 +22,7 @@ From the download (`Burnboard-<version>.zip`): open the zip if your browser has 
 
 After that it opens normally. (The labels "Privacy & Security", "Security" and "Open Anyway" were checked in the system files of macOS 26; the Touch ID prompt and the second confirmation are described from Apple's usual flow and were not checked.)
 
-From the source: run `./install.sh`. It needs the Xcode command line tools, builds the app and installs it to /Applications. An app built on your own Mac is not blocked, so no Open Anyway step. `native/package.sh` makes `dist/Burnboard-<version>.zip`.
+From the source: run `./install.sh`. It needs the Xcode command line tools, builds the app and installs it to /Applications. An app built on your own Mac is not blocked, so no Open Anyway step. `native/package.sh` makes `dist/Burnboard-<version>.dmg` (the download) and `dist/Burnboard-<version>.zip` (what the updater fetches).
 
 ## What it reads
 
@@ -64,7 +64,7 @@ Quit the app, then delete:
 
 `app/serve.py` is a development handler for testing the page in a browser: it answers one HTTP request on stdin and stdout, so it runs under launchd or another inetd-style launcher bound to 127.0.0.1. The distributed app does not use it and does not contain it. Tests: `python3 tests/test_cli.py`, `tests/test_parse.py`, `tests/test_archive.py`, `tests/test_pricing.py`. `python3 tests/compare_ccusage.py` is a developer check against ccusage (it downloads ccusage from npm); it is not part of the app.
 
-`native/package.sh` also writes `dist/Burnboard-<version>.zip.sha256` and `dist/release.json`, the signed release file that the app's update check reads. To check a copy of the zip, run `shasum -a 256 -c Burnboard-<version>.zip.sha256` in the folder that holds both files.
+`native/package.sh` also writes a `.sha256` file next to the dmg and the zip, and `dist/release.json`, the signed release file that the app's update check reads. To check a download, run `shasum -a 256 -c Burnboard-<version>.dmg.sha256` in the folder that holds both files.
 
 Force-quitting the app (not a normal quit) can leave a helper running until its own time limit: a refresh 180 seconds, a sign-in 300 seconds, the version and sign-in check about 10 seconds.
 
