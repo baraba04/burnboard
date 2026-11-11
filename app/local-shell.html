@@ -502,8 +502,13 @@ function renderSetup() {
 
 function startDash() {
   fetch('/last.json', { headers: HDR }).then(function (r) { if (!r.ok) throw 0; return r.json(); })
-    .then(function (j) { if (!j.meta) throw 0; show(j); })  // {} means no snapshot yet
-    .catch(function () { loadFresh(); });
+    .then(function (j) {
+      if (!j.meta) return;        // {} means no snapshot yet
+      delete j.meta[0].update;    // an update notice comes only from a refresh by the running version
+      show(j);
+    })
+    .catch(function () {})
+    .then(loadFresh);             // every open ends in a refresh; the last snapshot only fills the wait
 }
 window.addEventListener('DOMContentLoaded', function () {
   applyStatic();
