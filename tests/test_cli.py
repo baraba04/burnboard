@@ -7,6 +7,7 @@ nothing is fetched (USAGE_CLAUDE_OFFLINE=1; the price list is a stub where a tes
 The sign-in command is tested against a stand-in `claude` script on a PATH that cannot reach the real one.
 Run: python3 tests/test_cli.py
 """
+import http.server
 import io
 import json
 import os
@@ -14,6 +15,7 @@ import stat
 import subprocess
 import sys
 import tempfile
+import threading
 import time
 from contextlib import redirect_stdout
 
@@ -103,7 +105,9 @@ def test_config_and_consent():
     cfg["consent"]["version"] = core.CONSENT_VERSION + 1
     assert core.consent(cfg)["given"] is True
     cfg["consent"] = {"version": 1, "limits_call": True}       # version 1 (before Cowork was read) is not valid
-    assert core.CONSENT_VERSION == 3 and core.consent(cfg)["given"] is False
+    assert core.CONSENT_VERSION == 4 and core.consent(cfg)["given"] is False
+    cfg["consent"] = {"version": 3, "limits_call": True}       # version 3 (before the release file was requested) asks again
+    assert core.consent(cfg)["given"] is False
     cfg["consent"] = {"version": 2, "limits_call": True}       # version 2 (before the plan usage history was read) asks again
     assert core.consent(cfg)["given"] is False
     core.save_config(cfg)
@@ -644,6 +648,144 @@ def test_data_with_plan_history():
     reset()
 
 
+def test_update_check():
+    """The release file is requested at a refresh only when the app says which version runs (BURNBOARD_VERSION), is
+    ignored when anything about it is wrong, and only its version reaches the page."""
+    # version compare
+    for have, got, newer in (("1.2", "1.3", True), ("1.2", "1.2", False), ("1.3", "1.2", False), ("1.2", "1.2.1", True),
+                             ("1.2.1", "1.2", False), ("1.2", "1.10", True), ("1.9", "1.10", True), ("1.2", "1.2.0", False),
+                             ("1.2", "2.0", True), ("1.2", "1", False), ("1.2", "1.2.3.4", False), ("1.2", "1.x", False),
+                             ("1.2", "", False), ("1.2", "v1.3", False), ("1.2", "1.3\n", False), ("1.2", "1.3 ", False),
+                             ("1.2", "-1.3", False), ("1.2", "1..3", False), ("1.2", "\u0661.\u0663", False), ("1.2", "9" * 30 + ".0", False),
+                             ("1.2", None, False), ("1.2", 1.3, False), ("1.2", ["1.3"], False), ("1.2", True, False)):
+        os.environ["BURNBOARD_VERSION"] = have
+        os.environ.pop("USAGE_CLAUDE_OFFLINE")
+        real_fetch = core.fetch_release
+        core.fetch_release = lambda: {"version": got, "zip": "https://elsewhere.example/x.zip", "sig": "x"}
+        try:
+            got_update = core.update_check()
+        finally:
+            core.fetch_release = real_fetch
+            os.environ["USAGE_CLAUDE_OFFLINE"] = "1"
+        assert got_update == ({"version": got} if newer else None), (have, got, got_update)   # nothing else of the file is passed on
+    # no running version (development server), an unparsable one, and offline: no request at all
+    def no_fetch():
+        raise AssertionError("no request expected")
+    real_fetch = core.fetch_release
+    core.fetch_release = no_fetch
+    try:
+        os.environ.pop("BURNBOARD_VERSION", None)
+        os.environ.pop("USAGE_CLAUDE_OFFLINE")
+        assert core.update_check() is None
+        for bad in ("", "dev", "1", "1.2.3.4", "1.2-beta"):
+            os.environ["BURNBOARD_VERSION"] = bad
+            assert core.update_check() is None, bad
+        os.environ["BURNBOARD_VERSION"] = "1.2"
+        os.environ["USAGE_CLAUDE_OFFLINE"] = "1"
+        assert core.update_check() is None                       # offline skips it like the price list
+    finally:
+        core.fetch_release = real_fetch
+        os.environ.pop("BURNBOARD_VERSION", None)
+        os.environ["USAGE_CLAUDE_OFFLINE"] = "1"
+
+    # the real fetch against a local server: the answer is read with a size cap and without leaving its host
+    big = b'{"version": "1.9", "pad": "' + b"x" * (core.RELEASE_MAX_BYTES + 10) + b'"}'
+    answers = {"/ok": (200, b'{"version": "1.3"}', None), "/big": (200, big, None), "/junk": (200, b"not json", None),
+               "/list": (200, b'["1.3"]', None), "/moved": (302, b"", "http://localhost:%d/ok"), "/err": (500, b"{}", None)}
+    seen = []
+
+    class Handler(http.server.BaseHTTPRequestHandler):
+        def do_GET(self):
+            seen.append((self.path, sorted(k for k in self.headers.keys() if k.lower() not in ("host", "accept-encoding", "user-agent", "connection")),
+                         self.headers.get("User-Agent")))
+            status, body, where = answers[self.path]
+            self.send_response(status)
+            if where:
+                self.send_header("Location", where % server.server_port if "%d" in where else where)
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+
+        def log_message(self, *a):
+            pass
+
+    server = http.server.HTTPServer(("127.0.0.1", 0), Handler)
+    threading.Thread(target=server.serve_forever, daemon=True).start()
+    base = "http://127.0.0.1:%d" % server.server_port
+    try:
+        assert core.fetch_release(base + "/ok") == {"version": "1.3"}
+        for path in ("/big", "/junk", "/moved", "/err"):
+            try:
+                core.fetch_release(base + path)
+            except Exception:
+                continue
+            raise AssertionError(path + " must fail")
+        assert core.fetch_release(base + "/list") == ["1.3"]           # update_check ignores it (no .get): see below
+        assert seen and all(h == [] for _, h, _ in seen), seen          # no header or parameter beyond the plain GET
+        assert all(ua == "Burnboard-update" for _, _, ua in seen), seen  # and the one fixed User-Agent (nothing about this Mac)
+        # update_check ignores every failure and every shape but an object with a newer version
+        os.environ["BURNBOARD_VERSION"] = "1.2"
+        os.environ.pop("USAGE_CLAUDE_OFFLINE")
+        real_fetch = core.fetch_release
+        try:
+            for path, want in (("/ok", {"version": "1.3"}), ("/big", None), ("/junk", None), ("/list", None), ("/moved", None),
+                               ("/err", None)):
+                core.fetch_release = lambda path=path: real_fetch(base + path)
+                assert core.update_check() == want, path
+        finally:
+            core.fetch_release = real_fetch
+            os.environ.pop("BURNBOARD_VERSION", None)
+            os.environ["USAGE_CLAUDE_OFFLINE"] = "1"
+    finally:
+        server.shutdown()
+        server.server_close()
+    try:
+        core.fetch_release("http://127.0.0.1:1/none")                    # nothing listens there
+    except Exception:
+        pass
+    else:
+        raise AssertionError("a refused connection must fail")
+
+    # in a refresh: meta.update only for a newer version, and nothing else from the file; a failing fetch adds no note
+    reset()
+    home = os.path.join(TMP.name, "update-home")
+    os.makedirs(os.path.join(home, "projects"), exist_ok=True)
+    os.environ["CLAUDE_CONFIG_DIR"] = home
+    real_load, real_start, real_fetch = pricing.load, core.start_limits, core.fetch_release
+    pricing.load = lambda cache_dir, *a: ({}, False)
+    core.start_limits = lambda profile: None
+    try:
+        run("consent", "--limits-call", "off")
+        os.environ["BURNBOARD_VERSION"] = "1.2"
+        os.environ.pop("USAGE_CLAUDE_OFFLINE")
+        for release, update in (({"version": "1.3", "zip": "https://x/y.zip", "sha256": "0" * 64, "size": 1, "sig": "s"}, {"version": "1.3"}),
+                                ({"version": "1.2"}, None), ({"version": "1.1"}, None), ({"version": "junk"}, None), ({}, None)):
+            core.fetch_release = lambda release=release: release
+            os.remove(core.last_path(core.default_profile())) if os.path.exists(core.last_path(core.default_profile())) else None
+            code, out = run("data")
+            assert code == 0, out
+            assert out["meta"][0].get("update") == update, (release, out["meta"][0].get("update"))
+            assert b"https://x/y.zip" not in json.dumps(out).encode()
+        def broken():
+            raise OSError("no network")
+        core.fetch_release = broken
+        os.remove(core.last_path(core.default_profile()))
+        code, out = run("data")
+        assert code == 0 and "update" not in out["meta"][0] and out["meta"][0]["notes"] == [{"code": "limits_off"}], out["meta"][0]
+        # without the running version (development server) the file is not requested
+        os.environ.pop("BURNBOARD_VERSION")
+        core.fetch_release = no_fetch
+        os.remove(core.last_path(core.default_profile()))
+        code, out = run("data")
+        assert code == 0 and "update" not in out["meta"][0]
+    finally:
+        pricing.load, core.start_limits, core.fetch_release = real_load, real_start, real_fetch
+        os.environ.pop("CLAUDE_CONFIG_DIR", None)
+        os.environ.pop("BURNBOARD_VERSION", None)
+        os.environ["USAGE_CLAUDE_OFFLINE"] = "1"
+    reset()
+
+
 def test_limits_env():
     """The limits call runs without an API key, auth token or cloud-provider switch; the sign-in state and sign-in
     commands keep the environment as it is."""
@@ -782,11 +924,12 @@ def test_sign_in():
 
 def main():
     for t in (test_config_and_consent, test_other_sources, test_plan_history, test_profiles, test_paths_and_env, test_project_naming,
-              test_data_without_consent, test_data_with_consent, test_data_with_plan_history, test_limits_env, test_sign_in):
+              test_data_without_consent, test_data_with_consent, test_data_with_plan_history, test_update_check, test_limits_env, test_sign_in):
         t()
     print("ok: config round trip and mode, consent versions, profiles (add/use/remove, bad folders, links), "
           "Cowork and ~/.config/claude read for the default profile only (one call counted once, links not followed, source counts), "
           "the Claude app's plan usage history (bad files, links, size cap, default profile only, org id never output), "
+          "the update check (version compare, meta.update only for a newer version, oversize and malformed files and foreign redirects ignored, no request offline or without the running version), "
           "project naming, data refused without consent, data with limits off and on, limits call without API key variables, sign-in (success, failure, other profile, time limit, SIGTERM, no CLI)")
 
 

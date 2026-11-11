@@ -1,274 +1,364 @@
 <style>
-.u-wrap { display: flex; flex-direction: column; gap: var(--cds-gap-xl); max-width: 1100px; margin: 0 auto; font-family: var(--font-anthropic-sans); color: var(--color-fg); }
-.u-head { display: flex; flex-wrap: wrap; gap: var(--cds-gap-md); align-items: flex-end; justify-content: space-between; }
-.u-head h1 { margin: 0; font-family: var(--font-anthropic-serif); font-weight: 400; font-size: var(--cds-font-size-title); }
-.u-head p { margin: var(--cds-gap-xs) 0 0; color: var(--color-fg-muted); font-size: var(--cds-font-size-body); max-width: 62ch; line-height: 1.5; }
-.u-head p b { color: var(--color-fg); font-weight: var(--cds-font-weight-medium); }
-.u-snap { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); margin-top: var(--cds-gap-xs); }
-.u-ctrl { display: flex; flex-wrap: wrap; gap: var(--cds-gap-sm); }
+.u-wrap { --u-accent: #4a55c2; --u-neutral: #8c8a84; --u-t1: #3d3c3a; --u-t2: #77756f; --u-t3: #a8a69f; --u-t4: #d0cec6;
+  display: flex; flex-direction: column; max-width: 1100px; margin: 0 auto; font-family: var(--font-anthropic-sans); color: var(--color-fg); }
+@media (prefers-color-scheme: dark) { .u-wrap { --u-accent: #9aa3f2; --u-neutral: #8a8882; --u-t1: #d9d7d0; --u-t2: #a3a19a; --u-t3: #77756f; --u-t4: #4c4a46; } }
+.u-wrap [hidden] { display: none !important; }
+.u-wrap button { font: inherit; }
+
+/* Header: always visible */
+.u-bar { position: sticky; top: 0; z-index: 5; background: var(--color-bg); border-bottom: 1px solid var(--color-border-line); padding: 10px 0; margin-bottom: 16px; }
+.u-bar.u-filtered { border-bottom: 3px solid var(--u-accent); padding-bottom: 8px; }
+.u-row1 { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; }
+.u-ctl { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
+.u-tabs { display: flex; gap: 2px; }
+.u-tabs button { color: var(--color-fg-muted); background: transparent; border: 0; border-radius: var(--cds-radius); padding: 7px 14px; font-weight: var(--cds-font-weight-medium); cursor: pointer; white-space: nowrap; }
+.u-tabs button:hover { color: var(--color-fg); background: var(--color-panel); }
+.u-tabs button[aria-selected="true"] { color: var(--color-bg); background: var(--color-fg); }
 .u-seg { display: inline-flex; padding: 3px; gap: 2px; border: 1px solid var(--color-border-line); border-radius: var(--cds-radius); background: var(--color-panel); }
-.u-seg button { font: inherit; font-size: var(--cds-font-size-body); color: var(--color-fg-muted); background: transparent; border: 0; border-radius: calc(var(--cds-radius) - 2px); padding: 6px 12px; cursor: pointer; white-space: nowrap; }
+.u-seg button { font-size: var(--cds-font-size-body); color: var(--color-fg-muted); background: transparent; border: 0; border-radius: calc(var(--cds-radius) - 2px); padding: 5px 11px; cursor: pointer; white-space: nowrap; }
 .u-seg button:hover { color: var(--color-fg); }
 .u-seg button.on { background: var(--color-bg); color: var(--color-fg); box-shadow: 0 0 0 1px var(--color-border-line); }
-.u-seg button:focus-visible { outline: 2px solid var(--color-fg); outline-offset: 1px; }
-.u-h { margin: 0 0 var(--cds-gap-md); font-size: var(--cds-font-size-heading); font-weight: var(--cds-font-weight-medium); }
-.u-hint { font-weight: 400; color: var(--color-fg-muted); font-size: var(--cds-font-size-caption); margin-left: 6px; }
+.u-seg button.has-flt::after { content: ''; display: inline-block; width: 6px; height: 6px; margin-left: 6px; border-radius: 50%; background: var(--u-accent); vertical-align: middle; }
+.u-wrap button:focus-visible { outline: 2px solid var(--color-fg); outline-offset: 1px; }
+.u-refresh { display: flex; align-items: center; gap: 8px; }
+.u-bar .l-btn { padding: 6px 14px; }
+.u-status { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); max-width: 190px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.u-status.warn { color: var(--color-warn); }
+.u-status.bad { color: var(--color-bad); }
+.u-more { position: relative; }
+.u-more > button { color: var(--color-fg); background: var(--color-panel); border: 1px solid var(--color-border-line); border-radius: var(--cds-radius); padding: 5px 12px; cursor: pointer; }
+.u-more > button::after { content: ''; display: inline-block; width: 5px; height: 5px; margin: 0 2px 2px 8px; border-right: 2px solid currentColor; border-bottom: 2px solid currentColor; transform: rotate(45deg); }
+.u-menu { position: absolute; right: 0; top: calc(100% + 6px); z-index: 6; min-width: 200px; display: flex; flex-direction: column; gap: 2px; padding: 6px; background: var(--cds-surface-popover); border: 1px solid var(--cds-border); box-shadow: var(--cds-shadow-popover); border-radius: var(--cds-radius); }
+.u-menu > button { text-align: left; color: var(--color-fg); background: transparent; border: 0; border-radius: 6px; padding: 8px 10px; cursor: pointer; }
+.u-menu > button:hover { background: var(--color-panel); }
+.u-menu-lang { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 6px 10px 4px; border-top: 1px solid var(--color-border-line); margin-top: 4px; color: var(--color-fg-muted); font-size: var(--cds-font-size-caption); }
+.u-filters { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding-top: 10px; font-size: var(--cds-font-size-body); color: var(--color-fg-muted); }
+.u-chip { color: var(--color-fg); background: var(--color-panel); border: 1px solid var(--u-accent); border-radius: 999px; padding: 3px 10px; cursor: pointer; max-width: 100%; }
+.u-chip:hover { background: var(--color-bg); }
+.u-chip.clear { background: transparent; border-color: var(--color-border-line); color: var(--color-fg-muted); }
+.u-update { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; padding-top: 10px; font-size: var(--cds-font-size-body); }
+.u-update .l-btn { padding: 4px 12px; }
+.u-update .u-err { color: var(--color-bad); }
+.u-notes { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; margin-bottom: 12px; }
+.u-pill { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); border: 1px solid var(--color-border-line); border-radius: 999px; padding: 2px 10px; }
+.u-strip { flex-basis: 100%; color: var(--color-warn); font-size: 13px; }
 
-.u-limits { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: var(--cds-gap-lg); padding: var(--cds-pad-lg); background: var(--color-panel); border: 1px solid var(--color-border-line); border-radius: var(--cds-radius); }
+/* Tabs and shared blocks */
+.u-tab { display: flex; flex-direction: column; gap: 20px; }
+.u-calm { display: none; margin: 0; color: var(--color-fg-muted); line-height: 1.5; max-width: 62ch; }
+.u-nousage .u-calm { display: block; }
+.u-nousage .u-needs-usage { display: none; }
+.u-nolive .u-needs-live { display: none; }
+.u-h { margin: 0; font-size: 18px; line-height: 1.3; font-weight: var(--cds-font-weight-medium); }
+.u-h3 { margin: 0 0 8px; font-size: var(--cds-font-size-body); font-weight: var(--cds-font-weight-medium); }
+.u-hint { margin: 4px 0 0; font-size: var(--cds-font-size-caption); font-weight: 400; color: var(--color-fg-muted); line-height: 1.45; }
+.u-hint b { color: var(--color-fg); font-weight: var(--cds-font-weight-medium); }
+.u-head { display: flex; flex-direction: column; }
+.u-card { padding: 16px 20px; background: var(--color-panel); border: 1px solid var(--color-border-line); border-radius: var(--cds-radius); }
+.u-cardhead { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
+.u-link { color: var(--color-fg); background: transparent; border: 0; padding: 0; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; font-size: var(--cds-font-size-body); }
+.u-lab { color: var(--color-fg-muted); font-size: var(--cds-font-size-body); }
+.u-val { margin-top: 2px; font-size: var(--cds-font-size-heading); font-variant-numeric: tabular-nums; font-weight: var(--cds-font-weight-medium); }
+.u-line { margin: 0; font-size: var(--cds-font-size-body); color: var(--color-fg-muted); line-height: 1.5; }
+.u-line b { color: var(--color-fg); font-weight: var(--cds-font-weight-medium); font-variant-numeric: tabular-nums; }
+.u-scroll { overflow-x: auto; }
+
+/* Plan limits */
+.u-verdict { margin: 0 0 12px; font-size: var(--cds-font-size-heading); font-weight: var(--cds-font-weight-medium); line-height: 1.4; }
+.u-verdict div b, .u-lim-sub b { font-variant-numeric: tabular-nums; }
+.u-meters { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px 32px; }
+.u-limits { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: var(--cds-gap-lg); padding: var(--cds-pad-lg); background: var(--color-panel); border: 1px solid var(--color-border-line); border-radius: var(--cds-radius); }
 .u-lim-top { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; font-size: var(--cds-font-size-body); }
 .u-lim-top b { font-variant-numeric: tabular-nums; font-weight: var(--cds-font-weight-medium); font-size: var(--cds-font-size-heading); }
 .u-meter { height: 6px; border-radius: 3px; background: var(--color-border-line); overflow: hidden; margin: 8px 0 6px; }
 .u-meter span { display: block; height: 100%; border-radius: 3px; }
 .u-lim-sub { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); line-height: 1.5; }
+.u-lim-sub b { color: var(--color-fg); font-weight: var(--cds-font-weight-medium); }
 .u-lim-note { grid-column: 1 / -1; }
-.u-nousage .u-filters, .u-nousage .u-ctrl, .u-nousage #overview, .u-nousage #totals, .u-nousage #types, .u-nousage .u-two,
-.u-nousage #heat, .u-nousage #subagents, .u-nousage #sessions, .u-nousage #calls, .u-nolimits #limits, .u-applim #limits .u-week { display: none; }
-.u-lim-sub b { color: var(--color-fg); font-weight: var(--cds-font-weight-medium); font-variant-numeric: tabular-nums; }
 
-.u-top { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 2.4fr); gap: var(--cds-gap-xl); }
-@media (max-width: 720px) { .u-top { grid-template-columns: minmax(0, 1fr); } }
-.u-big { font-family: var(--font-anthropic-serif); font-weight: 400; font-size: 56px; line-height: 1; font-variant-numeric: tabular-nums; }
-.u-sub { color: var(--color-fg-muted); font-size: var(--cds-font-size-body); margin-top: var(--cds-gap-xs); }
-.u-delta { margin-top: var(--cds-gap-sm); font-size: var(--cds-font-size-body); color: var(--color-fg-muted); font-variant-numeric: tabular-nums; }
+/* Overview */
+.u-ovmain { display: grid; grid-template-columns: minmax(240px, 1fr) minmax(0, 2.6fr); gap: 20px 32px; }
+@media (max-width: 760px) { .u-ovmain { grid-template-columns: minmax(0, 1fr); } }
+.u-big { font-family: var(--font-anthropic-serif); font-weight: 400; font-size: 48px; line-height: 1.05; font-variant-numeric: tabular-nums; margin-top: 2px; }
+.u-delta { margin-top: 6px; font-size: var(--cds-font-size-body); color: var(--color-fg-muted); font-variant-numeric: tabular-nums; }
 .u-delta b { color: var(--color-fg); font-weight: var(--cds-font-weight-medium); }
-.u-mini { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--cds-gap-md); margin-top: var(--cds-gap-lg); }
-.u-lab { color: var(--color-fg-muted); font-size: var(--cds-font-size-body); }
-.u-mini .u-val { font-size: var(--cds-font-size-heading); }
-.u-val { margin-top: 4px; font-size: var(--cds-font-size-title); font-variant-numeric: tabular-nums; font-weight: var(--cds-font-weight-medium); }
-.u-chart { position: relative; min-height: 260px; }
+.u-cap { margin-top: 2px; font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); }
+.u-mini { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 16px; margin-top: 16px; }
+.u-chart { position: relative; min-height: 200px; margin-top: 6px; }
 .u-chart svg { display: block; }
-.u-chart text { fill: var(--cds-text-secondary); font-size: 11px; font-variant-numeric: tabular-nums; }
+.u-chart text, .u-weekchart text, .u-heat text, .u-ctx text { fill: var(--cds-text-secondary); font-size: 11px; font-variant-numeric: tabular-nums; }
 .u-tip { position: absolute; pointer-events: none; z-index: 2; padding: 8px 10px; background: var(--cds-surface-popover); border: 1px solid var(--cds-border); box-shadow: var(--cds-shadow-popover); border-radius: var(--cds-radius); font-size: 12px; color: var(--cds-text-secondary); white-space: nowrap; }
 .u-tip b { color: var(--color-fg); font-weight: var(--cds-font-weight-medium); }
 .u-tip i, .u-legend i { display: inline-block; width: 9px; height: 9px; border-radius: 2px; margin-right: 6px; }
-.u-totals { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: var(--cds-gap-lg); }
-.u-bar { display: flex; height: 10px; gap: 2px; border-radius: 5px; overflow: hidden; }
-.u-bar span { display: block; min-width: 3px; }
-.u-legend { display: flex; flex-wrap: wrap; gap: var(--cds-gap-sm) var(--cds-gap-lg); margin-top: var(--cds-gap-md); font-size: var(--cds-font-size-body); color: var(--color-fg-muted); }
+.u-legend { display: flex; flex-wrap: wrap; gap: 6px 16px; margin-top: 8px; font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); }
 .u-legend b { color: var(--color-fg); font-weight: var(--cds-font-weight-medium); font-variant-numeric: tabular-nums; margin-left: 4px; }
-.u-two { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--cds-gap-xl); }
-@media (max-width: 860px) { .u-two { grid-template-columns: minmax(0, 1fr); } }
-.u-scroll { overflow-x: auto; }
-.u-table { width: 100%; border-collapse: collapse; font-size: var(--cds-font-size-body); }
-.u-table th { text-align: right; font-weight: 400; color: var(--color-fg-muted); padding: 8px 10px; border-bottom: 1px solid var(--color-border-line); white-space: nowrap; }
-.u-table th:first-child, .u-table td:first-child { text-align: left; padding-left: 0; }
-.u-table td { padding: 11px 10px; text-align: right; border-bottom: 1px solid var(--color-border-line); font-variant-numeric: tabular-nums; white-space: nowrap; }
-.u-table td.u-wrapcell { white-space: normal; min-width: 180px; max-width: 360px; overflow-wrap: anywhere; }
-.u-table th.u-left, .u-table td.u-left { text-align: left; }
-.u-table td small { display: block; color: var(--color-fg-muted); font-size: var(--cds-font-size-caption); }
-.u-model { display: flex; flex-direction: column; gap: 5px; min-width: 150px; }
-.u-model i { display: block; height: 2px; border-radius: 1px; min-width: 2px; }
-.u-table tr.u-click { cursor: pointer; }
-.u-table tr.u-click:hover td { background: var(--color-panel); }
-.u-table tr.u-click:focus-visible { outline: 2px solid var(--color-fg); outline-offset: -2px; }
-.u-table tr.sel td { background: var(--color-panel); }
-.u-table tr.sel td:first-child span { font-weight: var(--cds-font-weight-medium); }
-.u-table tr.dim td { opacity: .45; }
-.u-filters { display: flex; flex-wrap: wrap; gap: var(--cds-gap-sm); align-items: center; font-size: var(--cds-font-size-body); color: var(--color-fg-muted); }
-.u-chip { font: inherit; color: var(--color-fg); background: var(--color-panel); border: 1px solid var(--color-border-line); border-radius: 999px; padding: 4px 10px; cursor: pointer; }
-.u-chip:hover { border-color: var(--color-fg-muted); }
-.u-chip:focus-visible { outline: 2px solid var(--color-fg); outline-offset: 1px; }
-.u-chip.clear { background: transparent; color: var(--color-fg-muted); }
-.u-week { margin-top: var(--cds-gap-lg); }
-.u-week h3 { margin: 0 0 var(--cds-gap-sm); font-size: var(--cds-font-size-body); font-weight: var(--cds-font-weight-medium); }
-.u-weekchart { position: relative; min-height: 190px; }
-.u-weekchart svg { display: block; }
-.u-weekchart text { fill: var(--cds-text-secondary); font-size: 11px; font-variant-numeric: tabular-nums; }
 .u-legend i.line { height: 2px; border-radius: 1px; width: 14px; vertical-align: middle; }
 .u-legend i.dot { border-radius: 50%; }
-.u-heat svg, .u-ctx svg { display: block; width: 100%; height: auto; }
-.u-heat text, .u-ctx text { fill: var(--cds-text-secondary); font-size: 11px; font-variant-numeric: tabular-nums; }
-.u-ctx { margin-top: var(--cds-gap-lg); }
-.u-ctx h3 { margin: 0 0 var(--cds-gap-sm); font-size: var(--cds-font-size-body); font-weight: var(--cds-font-weight-medium); overflow-wrap: anywhere; }
+.u-health { display: flex; flex-wrap: wrap; gap: 6px 20px; align-items: center; padding: 8px 0; border-top: 1px solid var(--color-border-line); border-bottom: 1px solid var(--color-border-line); font-size: var(--cds-font-size-body); }
+.u-hl { display: inline-flex; align-items: center; gap: 7px; color: var(--color-fg); background: transparent; border: 0; padding: 0; }
+button.u-hl { cursor: pointer; text-decoration: underline; text-decoration-color: var(--color-border-line); text-underline-offset: 3px; }
+button.u-hl:hover { text-decoration-color: var(--color-fg); }
+.u-hl i { width: 8px; height: 8px; border-radius: 50%; background: var(--color-ok); }
+.u-hl i.warn { background: var(--color-warn); }
+.u-hl i.none { background: var(--u-neutral); }
+.u-top3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px 28px; }
+@media (max-width: 860px) { .u-top3 { grid-template-columns: minmax(0, 1fr); } }
+.u-trow { display: grid; grid-template-columns: minmax(0, 1fr) 70px auto; gap: 10px; align-items: center; padding: 5px 6px; border-radius: 6px; font-size: var(--cds-font-size-body); }
+.u-trow .u-val-n { font-variant-numeric: tabular-nums; text-align: right; min-width: 56px; }
+.u-trow .u-rowbtn { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.u-src { margin: 0; font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); }
+
+/* Tables */
+.u-table { width: 100%; border-collapse: collapse; font-size: var(--cds-font-size-body); }
+.u-table th { text-align: left; font-weight: 400; color: var(--color-fg-muted); padding: 8px 10px; border-bottom: 1px solid var(--color-border-line); white-space: nowrap; }
+.u-table td { padding: 10px; text-align: left; border-bottom: 1px solid var(--color-border-line); white-space: nowrap; }
+.u-table th:first-child, .u-table td:first-child { padding-left: 8px; }
+.u-table th.u-num, .u-table td.u-num { text-align: right; font-variant-numeric: tabular-nums; }
+.u-table td.u-wrapcell { white-space: normal; min-width: 180px; max-width: 360px; overflow-wrap: anywhere; }
+.u-table td small { display: block; color: var(--color-fg-muted); font-size: var(--cds-font-size-caption); }
+.u-rowbtn { color: inherit; background: transparent; border: 0; padding: 0; text-align: left; cursor: pointer; }
+.u-rowbtn:hover { text-decoration: underline; text-decoration-style: dotted; text-underline-offset: 3px; }
+.u-frow { cursor: pointer; }
+.u-frow:hover, .u-frow.sel { background: var(--color-panel); }
+tr.u-frow:hover td, tr.u-frow.sel td { background: var(--color-panel); }
+.u-frow.sel td:first-child { box-shadow: inset 3px 0 0 var(--u-accent); }
+.u-frow.sel .u-rowbtn { font-weight: var(--cds-font-weight-medium); }
+.u-frow.sel .u-rowbtn::after { content: ' ×'; color: var(--color-fg-muted); }
+.u-frow:not(.sel):hover .u-rowbtn::after { content: ''; display: inline-block; margin-left: 8px; border: 4px solid transparent; border-top: 6px solid var(--color-fg-muted); border-bottom: 0; vertical-align: middle; }
+.u-frow.dim .u-track i, .u-frow.dim .u-mini-track i { opacity: .3; }
+.u-orow { cursor: pointer; }
+tr.u-orow:hover td { background: var(--color-panel); }
+.u-chev { display: inline-block; width: 6px; height: 6px; margin-right: 10px; border-right: 2px solid var(--color-fg-muted); border-bottom: 2px solid var(--color-fg-muted); transform: rotate(-45deg); transition: transform .12s; vertical-align: 1px; }
+.u-rowbtn[aria-expanded="true"] .u-chev { transform: rotate(45deg); }
+tr.u-orow.sel td { background: var(--color-panel); border-bottom-color: transparent; }
+tr.u-detail > td { padding: 0 8px 16px; background: var(--color-panel); white-space: normal; }
+.u-ctx { padding-top: 4px; scroll-margin-top: 140px; }
+.u-ctx h3 { margin: 0 0 8px; font-size: var(--cds-font-size-body); font-weight: var(--cds-font-weight-medium); overflow-wrap: anywhere; }
+.u-ctx svg, .u-heat svg { display: block; width: 100%; height: auto; }
+.u-share { display: flex; align-items: center; justify-content: flex-end; gap: 10px; }
+.u-track, .u-mini-track { display: block; height: 6px; border-radius: 3px; background: var(--color-border-line); overflow: hidden; }
+.u-track { width: 120px; }
+.u-mini-track { width: 100%; }
+.u-track i, .u-mini-track i { display: block; height: 100%; min-width: 2px; background: var(--u-neutral); border-radius: 3px; }
+.u-share span:last-child { min-width: 56px; text-align: right; }
+.u-dot { display: inline-block; width: 9px; height: 9px; border-radius: 2px; margin-right: 8px; vertical-align: 0; }
+.u-wide td:first-child { max-width: 420px; overflow: hidden; text-overflow: ellipsis; }
+
+/* Breakdown */
+.u-dimsw { align-self: flex-start; flex-wrap: wrap; }
+.u-bar2 { display: flex; height: 10px; gap: 2px; border-radius: 5px; overflow: hidden; }
+.u-bar2 span { display: block; min-width: 3px; }
+.u-figs { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px 20px; margin-bottom: 16px; }
+.u-fig-note { margin-top: 2px; font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); line-height: 1.4; }
+.u-heatleg { display: flex; align-items: center; gap: 6px; margin-top: 8px; font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); }
+.u-heatleg i { display: inline-block; width: 18px; height: 10px; border-radius: 2px; background: var(--color-fg); }
+
+/* Sessions, limits */
 .u-spark { display: flex; align-items: flex-end; gap: 1px; height: 44px; margin-bottom: var(--cds-gap-sm); border-bottom: 1px solid var(--color-border-line); }
 .u-spark span { flex: 1 1 0; background: var(--color-warn); border-radius: 1px 1px 0 0; }
-.u-smallnote { margin-top: var(--cds-gap-sm); font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); }
+.u-weekchart { position: relative; min-height: 190px; }
+.u-weekchart svg { display: block; }
 </style>
 
-<div class="u-wrap">
-  <header class="u-head">
-    <div>
-      <h1>Burnboard</h1>
-      <p data-draw="lead">—</p>
-      <div class="u-snap" data-draw="snap">—</div>
-    </div>
-    <div class="u-ctrl">
-      <div class="u-seg" role="group" data-i18n-aria="aria_period">
-        <button type="button" data-range="24h" data-i18n="r_24h"></button>
-        <button type="button" data-range="7" data-i18n="r_7"></button>
-        <button type="button" data-range="30" data-i18n="r_30"></button>
-        <button type="button" data-range="all" data-i18n="r_all"></button>
+<div class="u-wrap" id="u-wrap">
+  <header class="u-bar" id="u-bar">
+    <div class="u-row1">
+      <div class="u-tabs" role="tablist" data-i18n-aria="aria_tabs">
+        <button type="button" role="tab" id="tabbtn-overview" aria-controls="tab-overview" data-tab="overview" data-i18n="tab_overview"></button>
+        <button type="button" role="tab" id="tabbtn-breakdown" aria-controls="tab-breakdown" data-tab="breakdown" data-i18n="tab_breakdown"></button>
+        <button type="button" role="tab" id="tabbtn-sessions" aria-controls="tab-sessions" data-tab="sessions" data-i18n="tab_sessions"></button>
+        <button type="button" role="tab" id="tabbtn-limits" aria-controls="tab-limits" data-tab="limits" data-i18n="tab_limits"></button>
       </div>
-      <div class="u-seg" role="group" data-i18n-aria="aria_metric">
-        <button type="button" data-metric="cost" data-i18n="m_cost"></button>
-        <button type="button" data-metric="tokens" data-i18n="m_tokens"></button>
+      <div class="u-ctl">
+        <div class="u-seg" role="group" data-i18n-aria="aria_period" data-i18n-title="hint_local">
+          <button type="button" data-range="today" data-i18n="r_today"></button>
+          <button type="button" data-range="7" data-i18n="r_7"></button>
+          <button type="button" data-range="30" data-i18n="r_30"></button>
+          <button type="button" data-range="all" data-i18n="r_all"></button>
+        </div>
+        <div class="u-seg" role="group" data-i18n-aria="aria_metric">
+          <button type="button" data-metric="cost" data-i18n="m_cost"></button>
+          <button type="button" data-metric="tokens" data-i18n="m_tokens"></button>
+        </div>
+        <div class="u-refresh">
+          <button class="l-btn" id="l-refresh" type="button" data-i18n="btn_refresh"></button>
+          <span class="u-status" id="l-status" role="status"></span>
+        </div>
+        <div class="u-more" id="u-more">
+          <button type="button" id="u-more-btn" aria-expanded="false" aria-controls="u-menu" data-i18n="btn_more"></button>
+          <div class="u-menu" id="u-menu" hidden>
+            <button type="button" data-export data-i18n="btn_csv"></button>
+            <button type="button" id="l-setup-btn" data-i18n="btn_setup" hidden></button>
+            <div class="u-menu-lang">
+              <span data-i18n="aria_lang"></span>
+              <div class="u-seg" role="group" data-i18n-aria="aria_lang">
+                <button type="button" data-lang="en">EN</button>
+                <button type="button" data-lang="sl">SL</button>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
-      <div class="u-seg"><button type="button" data-export data-i18n="btn_csv"></button></div>
     </div>
+    <div class="u-filters" data-draw="filters" hidden></div>
+    <div class="u-update" data-draw="update" role="status" hidden></div>
   </header>
 
-  <div class="u-filters" data-draw="filters"></div>
-  <div hidden data-draw="wrapstate"></div>
+  <div hidden data-draw="wrapstate" data-keep></div>
+  <div class="u-notes" data-draw="notes" hidden></div>
 
-  <section id="limits">
-    <h2 class="u-h"><span data-i18n="h_limits"></span> <span class="u-hint" data-i18n="h_limits_hint"></span></h2>
-    <div class="u-limits" data-draw="limits"></div>
-    <div class="u-week">
-      <h3 data-i18n="h_week"></h3>
-      <div class="u-weekchart" data-draw="weekchart">—</div>
-      <div class="u-legend" data-draw="weeklegend"></div>
+  <section class="u-tab" id="tab-overview" role="tabpanel" aria-labelledby="tabbtn-overview" data-panel="overview">
+    <p class="u-calm" data-i18n="no_usage"></p>
+    <section class="u-card" data-draw="ovlim" data-keep></section>
+    <div class="u-needs-usage u-ovmain">
+      <div>
+        <div class="u-lab" data-draw="biglabel" data-ph>—</div>
+        <div class="u-big" data-draw="big" data-ph>—</div>
+        <div class="u-delta" data-draw="delta" data-ph>—</div>
+        <div class="u-cap" data-draw="bigcap"></div>
+        <div class="u-mini">
+          <div><div class="u-lab" data-i18n="sessions"></div><div class="u-val" data-draw="n_sess" data-ph>—</div></div>
+          <div><div class="u-lab" data-i18n="calls"></div><div class="u-val" data-draw="n_msgs" data-ph>—</div></div>
+          <div><div class="u-lab" data-draw="avg_label" data-ph>—</div><div class="u-val" data-draw="avg" data-ph>—</div></div>
+          <div><div class="u-lab" data-draw="peak_label" data-ph>—</div><div class="u-val" data-draw="peak" data-ph>—</div></div>
+        </div>
+      </div>
+      <div>
+        <h2 class="u-h" data-draw="charttitle" data-ph>—</h2>
+        <div class="u-chart" data-draw="chart" data-keep></div>
+        <div class="u-legend" data-draw="chartlegend"></div>
+      </div>
     </div>
-    <div class="u-week">
-      <h3><span data-i18n="h_qweeks"></span> <span class="u-hint" data-i18n="h_qweeks_hint"></span></h3>
+    <div class="u-needs-usage u-health" data-draw="health"></div>
+    <div class="u-needs-usage u-top3" data-draw="top"></div>
+    <p class="u-needs-usage u-src" data-i18n="ov_source"></p>
+  </section>
+
+  <section class="u-tab" id="tab-breakdown" role="tabpanel" aria-labelledby="tabbtn-breakdown" data-panel="breakdown" hidden>
+    <p class="u-calm" data-i18n="no_usage"></p>
+    <div class="u-needs-usage u-tab">
+      <div class="u-head">
+        <h2 class="u-h" data-i18n="h_breakdown"></h2>
+        <p class="u-hint" data-i18n="bk_follow"></p>
+      </div>
+      <div class="u-seg u-dimsw" role="group" data-i18n-aria="aria_dim">
+        <button type="button" data-dim="project" data-i18n="th_project"></button>
+        <button type="button" data-dim="model" data-i18n="th_model"></button>
+        <button type="button" data-dim="agent" data-i18n="th_agent"></button>
+        <button type="button" data-dim="effort" data-i18n="th_effort"></button>
+        <button type="button" data-dim="via" data-i18n="th_via"></button>
+      </div>
+      <p class="u-hint" style="margin:-8px 0 0" data-draw="bkhint"></p>
+      <div data-draw="agentsum" data-keep>
+        <div class="u-bar2" data-draw="subbar"></div>
+        <div class="u-legend" data-draw="sublegend"></div>
+      </div>
+      <div class="u-scroll">
+        <table class="u-table u-wide">
+          <thead><tr data-draw="bkhead"></tr></thead>
+          <tbody data-draw="bkbody"></tbody>
+        </table>
+      </div>
+      <section class="u-card">
+        <h2 class="u-h3" data-i18n="h_tokens"></h2>
+        <div class="u-figs">
+          <div><div class="u-lab" data-i18n="tot_all"></div><div class="u-val" data-draw="t_all" data-ph>—</div></div>
+          <div><div class="u-lab" data-i18n="tot_read"></div><div class="u-val" data-draw="t_read" data-ph>—</div></div>
+          <div><div class="u-lab" data-i18n="tot_unc"></div><div class="u-val" data-draw="t_unc" data-ph>—</div></div>
+          <div><div class="u-lab" data-i18n="tot_out"></div><div class="u-val" data-draw="t_out" data-ph>—</div></div>
+          <div><div class="u-lab" data-i18n="tot_saved"></div><div class="u-val" data-draw="t_saved" data-ph>—</div><div class="u-fig-note" data-i18n="tot_saved_note"></div></div>
+        </div>
+        <div class="u-bar2" data-draw="typebar"></div>
+        <div class="u-legend" data-draw="typelegend"></div>
+      </section>
+      <section data-draw="heatsec" data-keep>
+        <div class="u-head" style="margin-bottom:8px">
+          <h2 class="u-h" data-i18n="h_heat"></h2>
+          <p class="u-hint" data-i18n="h_heat_hint"></p>
+        </div>
+        <div class="u-heat" data-draw="heat"></div>
+        <div class="u-heatleg"><span data-i18n="heat_low"></span><i style="opacity:.12"></i><i style="opacity:.35"></i><i style="opacity:.6"></i><i style="opacity:.8"></i><i></i><span data-i18n="heat_high"></span></div>
+      </section>
+    </div>
+  </section>
+
+  <section class="u-tab" id="tab-sessions" role="tabpanel" aria-labelledby="tabbtn-sessions" data-panel="sessions" hidden>
+    <p class="u-calm" data-i18n="no_usage"></p>
+    <div class="u-needs-usage u-tab">
+      <section>
+        <div class="u-head" style="margin-bottom:8px">
+          <h2 class="u-h" data-i18n="h_sessions"></h2>
+          <p class="u-hint" data-i18n="h_sessions_hint"></p>
+          <p class="u-hint" data-draw="sessfollow"></p>
+        </div>
+        <div class="u-scroll">
+          <table class="u-table">
+            <thead><tr data-draw="sesshead"></tr></thead>
+            <tbody data-draw="sessions"></tbody>
+          </table>
+        </div>
+      </section>
+      <section>
+        <div class="u-head" style="margin-bottom:8px">
+          <h2 class="u-h" data-i18n="h_calls"></h2>
+          <p class="u-hint" data-i18n="h_calls_hint"></p>
+        </div>
+        <div class="u-scroll">
+          <table class="u-table">
+            <thead><tr><th data-i18n="th_time"></th><th data-i18n="th_session"></th><th data-i18n="th_model"></th><th class="u-num" data-i18n="th_context"></th><th class="u-num" data-i18n="th_output"></th><th class="u-num" data-i18n="th_cost"></th></tr></thead>
+            <tbody data-draw="calls"></tbody>
+          </table>
+        </div>
+      </section>
+      <section id="u-problems" style="scroll-margin-top:140px">
+        <div class="u-head" style="margin-bottom:8px">
+          <h2 class="u-h" data-i18n="h_problems"></h2>
+          <p class="u-hint" data-i18n="h_problems_hint"></p>
+        </div>
+        <p class="u-line" data-draw="compnote"></p>
+        <h3 class="u-h3" style="margin-top:16px" data-i18n="h_errors"></h3>
+        <p class="u-line" data-draw="errnone" hidden></p>
+        <div data-draw="errwrap" data-keep>
+          <div class="u-spark" data-draw="errspark"></div>
+          <div class="u-scroll">
+            <table class="u-table">
+              <thead><tr><th data-i18n="th_kind"></th><th class="u-num" data-i18n="th_count"></th><th data-i18n="th_lastseen"></th></tr></thead>
+              <tbody data-draw="errors"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    </div>
+  </section>
+
+  <section class="u-tab" id="tab-limits" role="tabpanel" aria-labelledby="tabbtn-limits" data-panel="limits" hidden>
+    <div class="u-head">
+      <h2 class="u-h" data-i18n="h_limits"></h2>
+      <p class="u-hint" data-i18n="lim_follow"></p>
+    </div>
+    <div class="u-limits" data-draw="limits"></div>
+    <section class="u-needs-live">
+      <h2 class="u-h3" data-i18n="h_week"></h2>
+      <div class="u-weekchart" data-draw="weekchart" data-keep></div>
+      <div class="u-legend" data-draw="weeklegend"></div>
+    </section>
+    <section class="u-needs-live">
+      <div class="u-head" style="margin-bottom:8px">
+        <h2 class="u-h3" style="margin:0" data-i18n="h_qweeks"></h2>
+        <p class="u-hint" data-i18n="h_qweeks_hint"></p>
+      </div>
       <div class="u-scroll">
         <table class="u-table">
-          <thead><tr><th data-i18n="th_week"></th><th data-i18n="th_cost"></th><th data-i18n="th_tokens"></th><th data-i18n="th_limit_used"></th></tr></thead>
+          <thead><tr><th data-i18n="th_week"></th><th class="u-num" data-i18n="th_cost"></th><th class="u-num" data-i18n="th_tokens"></th><th class="u-num" data-i18n="th_limit_used"></th></tr></thead>
           <tbody data-draw="qweeks"></tbody>
         </table>
       </div>
-    </div>
-  </section>
-
-  <section id="applimits" hidden>
-    <h2 class="u-h" data-i18n="h_app_hist"></h2>
-    <div class="u-weekchart" data-draw="appchart">—</div>
-    <div class="u-legend" data-draw="applegend"></div>
-  </section>
-
-  <section class="u-top" id="overview">
-    <div>
-      <div class="u-big" data-draw="big">—</div>
-      <div class="u-sub" data-draw="biglabel">—</div>
-      <div class="u-delta" data-draw="delta">—</div>
-      <div class="u-mini">
-        <div><div class="u-lab" data-i18n="sessions"></div><div class="u-val" data-draw="n_sess">—</div></div>
-        <div><div class="u-lab" data-i18n="calls"></div><div class="u-val" data-draw="n_msgs">—</div></div>
-        <div><div class="u-lab" data-draw="avg_label">—</div><div class="u-val" data-draw="avg">—</div></div>
-        <div><div class="u-lab" data-draw="peak_label">—</div><div class="u-val" data-draw="peak">—</div></div>
-      </div>
-    </div>
-    <div>
-      <h2 class="u-h" data-draw="charttitle">—</h2>
-      <div class="u-chart" data-draw="chart">—</div>
-      <div class="u-legend" data-draw="chartlegend"></div>
-    </div>
-  </section>
-
-  <section id="totals">
-    <h2 class="u-h" data-i18n="h_totals"></h2>
-    <div class="u-totals">
-      <div><div class="u-lab" data-i18n="tot_all"></div><div class="u-val" data-draw="t_all">—</div></div>
-      <div><div class="u-lab" data-i18n="tot_read"></div><div class="u-val" data-draw="t_read">—</div></div>
-      <div><div class="u-lab" data-i18n="tot_unc"></div><div class="u-val" data-draw="t_unc">—</div></div>
-      <div><div class="u-lab" data-i18n="tot_out"></div><div class="u-val" data-draw="t_out">—</div></div>
-      <div><div class="u-lab" data-i18n="tot_cost"></div><div class="u-val" data-draw="t_cost">—</div></div>
-      <div><div class="u-lab" data-i18n="tot_saved"></div><div class="u-val" data-draw="t_saved">—</div></div>
-    </div>
-  </section>
-
-  <section id="types">
-    <h2 class="u-h" data-i18n="h_types"></h2>
-    <div class="u-bar" data-draw="typebar"></div>
-    <div class="u-legend" data-draw="typelegend"></div>
-  </section>
-
-  <div class="u-two">
-    <section id="models">
-      <h2 class="u-h" data-i18n="h_models"></h2>
-      <div class="u-scroll">
-        <table class="u-table">
-          <thead><tr><th data-i18n="th_model"></th><th data-i18n="th_cost"></th><th data-i18n="th_share"></th><th data-i18n="th_tokens"></th></tr></thead>
-          <tbody data-draw="models"></tbody>
-        </table>
-      </div>
     </section>
-    <section id="projects">
-      <h2 class="u-h" data-i18n="h_projects"></h2>
-      <div class="u-scroll">
-        <table class="u-table">
-          <thead><tr><th data-i18n="th_project"></th><th data-i18n="th_cost"></th><th data-i18n="th_share"></th><th data-i18n="th_tokens"></th></tr></thead>
-          <tbody data-draw="projects"></tbody>
-        </table>
-      </div>
+    <section data-draw="appblock" data-keep hidden>
+      <h2 class="u-h3" data-i18n="h_app_hist"></h2>
+      <div class="u-weekchart" data-draw="appchart" data-keep></div>
+      <div class="u-legend" data-draw="applegend"></div>
     </section>
-  </div>
-
-  <div class="u-two">
-    <section id="agents">
-      <h2 class="u-h" data-i18n="h_agents"></h2>
-      <div class="u-scroll">
-        <table class="u-table">
-          <thead><tr><th data-i18n="th_agent"></th><th data-i18n="th_cost"></th><th data-i18n="th_share"></th><th data-i18n="th_tokens"></th></tr></thead>
-          <tbody data-draw="agents"></tbody>
-        </table>
-      </div>
-    </section>
-    <section id="efforts">
-      <h2 class="u-h" data-i18n="h_efforts"></h2>
-      <div class="u-scroll">
-        <table class="u-table">
-          <thead><tr><th data-i18n="th_effort"></th><th data-i18n="th_cost"></th><th data-i18n="th_share"></th><th data-i18n="th_tokens"></th></tr></thead>
-          <tbody data-draw="efforts"></tbody>
-        </table>
-      </div>
-    </section>
-  </div>
-
-  <div class="u-two">
-    <section id="vias">
-      <h2 class="u-h"><span data-i18n="h_via"></span> <span class="u-hint" data-i18n="h_via_hint"></span></h2>
-      <div class="u-scroll">
-        <table class="u-table">
-          <thead><tr><th data-i18n="th_via"></th><th data-i18n="th_cost"></th><th data-i18n="th_share"></th><th data-i18n="th_tokens"></th></tr></thead>
-          <tbody data-draw="vias"></tbody>
-        </table>
-      </div>
-    </section>
-    <section id="errors">
-      <h2 class="u-h"><span data-i18n="h_errors"></span> <span class="u-hint" data-i18n="h_errors_hint"></span></h2>
-      <div class="u-spark u-box" data-draw="errspark"></div>
-      <div class="u-scroll">
-        <table class="u-table">
-          <thead><tr><th data-i18n="th_kind"></th><th data-i18n="th_count"></th><th data-i18n="th_lastseen"></th></tr></thead>
-          <tbody data-draw="errors"></tbody>
-        </table>
-      </div>
-    </section>
-  </div>
-
-  <section id="heat">
-    <h2 class="u-h"><span data-i18n="h_heat"></span> <span class="u-hint" data-i18n="h_heat_hint"></span></h2>
-    <div class="u-heat u-box" data-draw="heat"></div>
-  </section>
-
-  <section id="subagents">
-    <h2 class="u-h"><span data-i18n="h_sub"></span> <span class="u-hint" data-i18n="h_sub_hint"></span></h2>
-    <div class="u-bar" data-draw="subbar"></div>
-    <div class="u-legend" data-draw="sublegend"></div>
-  </section>
-
-  <section id="sessions">
-    <h2 class="u-h"><span data-i18n="h_sessions"></span> <span class="u-hint" data-i18n="h_sessions_hint"></span></h2>
-    <div class="u-scroll">
-      <table class="u-table">
-        <thead><tr><th data-i18n="th_session"></th><th data-i18n="th_project"></th><th data-i18n="th_last"></th><th data-i18n="th_cost"></th><th data-i18n="th_tokens"></th></tr></thead>
-        <tbody data-draw="sessions"></tbody>
-      </table>
-    </div>
-    <div class="u-smallnote" data-draw="sessnote"></div>
-    <div class="u-ctx u-box" data-draw="ctx"></div>
-    <div class="u-smallnote" data-draw="compnote"></div>
-  </section>
-
-  <section id="calls">
-    <h2 class="u-h"><span data-i18n="h_calls"></span> <span class="u-hint" data-i18n="h_calls_hint"></span></h2>
-    <div class="u-scroll">
-      <table class="u-table">
-        <thead><tr><th data-i18n="th_time"></th><th class="u-left" data-i18n="th_session"></th><th data-i18n="th_model"></th><th data-i18n="th_context"></th><th data-i18n="th_output"></th><th data-i18n="th_cost"></th></tr></thead>
-        <tbody data-draw="calls"></tbody>
-      </table>
-    </div>
-    <div class="u-smallnote" data-draw="callnote"></div>
   </section>
 </div>
 
@@ -294,23 +384,23 @@ dash.loader('via_hint', { fn: function (a) { return a.answer.via_hint || {}; } }
 dash.loader('sess_ctx', { fn: function (a) { return a.answer.sess_ctx || {}; } });
 dash.loader('status', { fn: function (a) {
   var m = a.answer.meta[0], lim = a.answer.limits.length ? a.answer.limits : [{ key: null, percentUsed: null, resetsAt: null }];
-  return lim.map(function (l) { return { key: l.key, percentUsed: l.percentUsed, resetsAt: l.resetsAt, app: m.app_limits || null, generated_at: m.generated_at, first_hour: m.first_hour, restored: (m.check && m.check.restored) || [] }; });
+  return lim.map(function (l) { return { key: l.key, percentUsed: l.percentUsed, resetsAt: l.resetsAt, app: m.app_limits || null, generated_at: m.generated_at, first_hour: m.first_hour, restored: (m.check && m.check.restored) || [], notes: m.notes || [], update: m.update || null }; });
 } });
 
 (function () {
   var DIMS = ['project', 'model', 'agent', 'effort', 'via'];
-  var state = { range: '24h', metric: 'cost', session: null, filter: { project: null, model: null, agent: null, effort: null, via: null } };
+  var TABS = ['overview', 'breakdown', 'sessions', 'limits'];
+  var state = { tab: 'overview', range: 'today', metric: 'cost', dim: 'project', session: null, filter: { project: null, model: null, agent: null, effort: null, via: null } };
   var t = APP.t;
   var LOC = {
     en: { num: d3.formatLocale({ decimal: '.', thousands: ',', grouping: [3], currency: ['$', ''] }), units: [' B', ' M', ' K'], pct: '%',
-          day: d3.timeFormat('%b %-d'), dayY: d3.timeFormat('%b %-d, %Y'), dt: d3.timeFormat('%b %-d, %H:%M') },
+          day: d3.timeFormat('%b %-d'), dt: d3.timeFormat('%b %-d, %H:%M') },
     sl: { num: d3.formatLocale({ decimal: ',', thousands: '.', grouping: [3], currency: ['$', ''] }), units: [' mrd', ' mio', ' tis.'], pct: ' %',
-          day: d3.timeFormat('%-d. %-m.'), dayY: d3.timeFormat('%-d. %-m. %Y'), dt: d3.timeFormat('%-d. %-m. %H:%M') }
+          day: d3.timeFormat('%-d. %-m.'), dt: d3.timeFormat('%-d. %-m. %H:%M') }
   };
   function L() { return LOC[APP.lang] || LOC.en; }
   var dayKey = d3.timeFormat('%Y-%m-%d'), fHour = d3.timeFormat('%H:00');
   function fDay(d) { return L().day(d); }
-  function fDayY(d) { return L().dayY(d); }
   function fDT(d) { return L().dt(d); }
   var memo = {};
 
@@ -327,7 +417,9 @@ dash.loader('status', { fn: function (a) {
   function fmtPct(p) { return (p < 0.1 && p > 0 ? '<' + L().num.format('.1f')(0.1) : L().num.format('.1f')(p)) + L().pct; }
   function fmtPct0(p) { return L().num.format('.0f')(p) + L().pct; }
   function fmtVal(n) { return state.metric === 'cost' ? fmtCost(n) : fmtTok(n); }
+  function fmtOther(r) { return state.metric === 'cost' ? fmtTok(r.tokens) : fmtCost(r.cost); }
   function mval(r) { return state.metric === 'cost' ? r.cost : r.tokens; }
+  function byMetric(list) { return list.slice().sort(function (a, b) { return mval(b) - mval(a); }); }
   function el(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
   // Fill `e` from a translated template; {name} parts become bold values.
   function rich(e, key, parts, append) {
@@ -342,6 +434,30 @@ dash.loader('status', { fn: function (a) {
     if (h >= 48) return Math.floor(h / 24) + ' d ' + (h % 24) + ' h';
     return h > 0 ? h + ' h ' + m + ' min' : m + ' min';
   }
+  // Long names (project paths) keep their start and end; the full text goes in the title.
+  function mid(s, n) {
+    s = String(s);
+    if (s.length <= n) return s;
+    var a = Math.ceil((n - 1) * 0.4), b = n - 1 - a;
+    return s.slice(0, a) + '…' + s.slice(s.length - b);
+  }
+
+  // One colour per model family, fixed by the family name (never by rank); versions of a family differ in strength,
+  // newest strongest. The muted grey is only ever "other".
+  var FAMILY_COLOR = { opus: 0, sonnet: 1, fable: 4, haiku: 5 }, SHADE = [1, 0.66, 0.44, 0.3];
+  function familyOf(m) { var x = /^(?:claude-)?([a-z]+)/.exec(m); return x ? x[1] : m; }
+  function verOf(m) { return m.replace(/-\d{8}$/, '').split('-').filter(function (p) { return /^\d+$/.test(p); }).map(Number); }
+  function newerFirst(a, b) { var A = verOf(a), B = verOf(b); for (var i = 0; i < Math.max(A.length, B.length); i++) { var d = (B[i] || 0) - (A[i] || 0); if (d) return d; } return a < b ? -1 : 1; }
+  function modelStyles(names) {
+    var out = {}, fams = d3.group(names, familyOf);
+    fams.forEach(function (list, f) {
+      var h = 0, idx;
+      for (var i = 0; i < f.length; i++) h = (h * 31 + f.charCodeAt(i)) >>> 0;
+      idx = FAMILY_COLOR[f] != null ? FAMILY_COLOR[f] : [2, 3][h % 2];
+      list.slice().sort(newerFirst).forEach(function (m, k) { out[m] = { c: dash.colors[idx], o: SHADE[Math.min(k, SHADE.length - 1)] }; });
+    });
+    return out;
+  }
 
   function base() {
     var g = dash.data('usage'), st = dash.data('status');
@@ -350,13 +466,9 @@ dash.loader('status', { fn: function (a) {
     var rows = g.data.map(function (r) {
       return { hour: new Date(r.hour), model: r.model, project: r.project, sub: +r.sub, agent: r.agent || 'main', effort: r.effort || '', via: r.via || '', input: +r.input, output: +r.output, cache_write: +r.cache_write, cache_read: +r.cache_read, cost: +r.cost, saved: +r.saved, msgs: +r.msgs, tokens: (+r.input) + (+r.output) + (+r.cache_write) + (+r.cache_read) };
     });
-    var rank = d3.rollups(rows, function (rs) { return d3.sum(rs, function (r) { return r.cost; }); }, function (r) { return r.model; })
-      .sort(function (a, b) { return b[1] - a[1]; }).map(function (x) { return x[0]; });
-    var colorOf = {};
-    rank.forEach(function (m, i) { colorOf[m] = i < dash.colors.length ? dash.colors[i] : 'var(--cds-chart-muted)'; });
     var m0 = st.data[0];
     state.session = null;  // session numbers belong to one snapshot
-    memo = { src: g.data, st: st.data, views: {}, base: { rows: rows, now: new Date(m0.generated_at), first: new Date(m0.first_hour || m0.generated_at), app: m0.app || null, limits: st.data.filter(function (l) { return l.key; }), colorOf: colorOf, restored: new Set(m0.restored || []) } };
+    memo = { src: g.data, st: st.data, views: {}, base: { rows: rows, now: new Date(m0.generated_at), first: new Date(m0.first_hour || m0.generated_at), app: m0.app || null, limits: st.data.filter(function (l) { return l.key; }), colorOf: modelStyles(Array.from(new Set(rows.map(function (r) { return r.model; })))), restored: new Set(m0.restored || []), notes: m0.notes || [], update: m0.update || null } };
     return memo.base;
   }
   function sums(rows) {
@@ -381,28 +493,26 @@ dash.loader('status', { fn: function (a) {
     if (!b) return null;
     var ck = state.range + '\u0002' + filterKey();
     if (memo.views[ck]) return memo.views[ck];
-    var hourly = state.range === '24h', start, buckets, prevStart = null, today = d3.timeDay.floor(b.now);
+    var hourly = state.range === 'today', start, buckets, prevStart = null, prevEnd = null, today = d3.timeDay.floor(b.now);
     if (hourly) {
-      var last = d3.utcHour.floor(b.now);
-      start = d3.utcHour.offset(last, -23);
-      buckets = d3.utcHours(start, d3.utcHour.offset(last, 1));
-      prevStart = d3.utcHour.offset(start, -24);
+      // Today: from local midnight to now, by hour; compared with the same hours of yesterday.
+      start = today;
+      buckets = d3.utcHours(d3.utcHour.ceil(start), d3.utcHour.offset(d3.utcHour.floor(b.now), 1));
+      prevStart = d3.timeDay.offset(start, -1);
+      prevEnd = new Date(+prevStart + (b.now - start));
     } else {
       var n = state.range === 'all' ? null : +state.range;
       start = n ? d3.timeDay.offset(today, -(n - 1)) : d3.timeDay.floor(b.first);
       buckets = d3.timeDays(start, d3.timeDay.offset(today, 1));
-      if (n) prevStart = d3.timeDay.offset(start, -n);
+      if (n) { prevStart = d3.timeDay.offset(start, -n); prevEnd = start; }
     }
     var inRange = b.rows.filter(function (r) { return r.hour >= start; });
     var rows = passing(inRange);
     var prev = null;
-    if (prevStart && b.first <= prevStart) prev = sums(passing(b.rows.filter(function (r) { return r.hour >= prevStart && r.hour < start; })));
+    if (prevStart && b.first <= prevStart) prev = sums(passing(b.rows.filter(function (r) { return r.hour >= prevStart && r.hour < prevEnd; })));
     var bkey = hourly ? function (d) { return +d; } : function (d) { return dayKey(d); };
-    var v = { b: b, hourly: hourly, start: start, buckets: buckets, bkey: bkey, rows: rows, tot: sums(rows), prev: prev, by: {},
-      bySub: group(rows, function (r) { return r.sub; }) };
+    var v = { b: b, hourly: hourly, start: start, buckets: buckets, bkey: bkey, rows: rows, tot: sums(rows), prev: prev, by: {} };
     DIMS.forEach(function (d) { v.by[d] = group(passing(inRange, d), function (r) { return r[d]; }); });
-    v.byModel = group(rows, function (r) { return r.model; });
-    v.byProject = group(rows, function (r) { return r.project; });
     memo.views[ck] = v;
     return v;
   }
@@ -414,20 +524,22 @@ dash.loader('status', { fn: function (a) {
     return d3.rollups(use, function (rs) { return { cost: d3.sum(rs, function (r) { return +r.cost; }), tokens: d3.sum(rs, function (r) { return +r.tokens; }) }; }, function (r) { return +r.s; })
       .map(function (x) { return { s: x[0], cost: x[1].cost, tokens: x[1].tokens, info: s.data[x[0]] }; })
       .filter(function (x) { return state.filter.project == null || (x.info && x.info.project === state.filter.project); })
-      .sort(function (a, b) { return b.cost - a.cost; });
+      .sort(function (a, b) { return mval(b) - mval(a); });
   }
 
   var NAMES = [];
+  // Text draws show a dash and tables are emptied while nothing is loaded; data-keep elements are left alone.
   function R(name, fn) {
     NAMES.push(name);
     dash.draw(name, function (e) {
       var v = view();
-      var container = e.tagName === 'TBODY' || e.classList.contains('u-bar') || e.classList.contains('u-legend') || e.classList.contains('u-limits') || e.classList.contains('u-filters') || e.classList.contains('u-smallnote') || e.classList.contains('u-box');
-      if (!v) { if (container) e.replaceChildren(); else e.textContent = '—'; return; }
+      if (!v) { if (e.hasAttribute('data-ph')) e.textContent = '—'; else if (!e.hasAttribute('data-keep')) e.replaceChildren(); return; }
       fn(e, v);
     });
   }
-  function redrawAll() { NAMES.forEach(function (n) { dash.draw(n); }); dash.draw('chart'); dash.draw('weekchart'); }
+  function redrawAll() { NAMES.forEach(function (n) { dash.draw(n); }); drawSized(); }
+  // Charts that measure their box: redrawn when their tab appears or the window changes.
+  function drawSized() { dash.draw('chart'); dash.draw('weekchart'); dash.draw('appchart'); }
   function dimLabel(dim, name) {
     if (dim === 'agent') return name === 'main' ? t('agent_main') : name === 'unknown' ? t('agent_unknown') : name;
     if (dim === 'effort') return name === '' ? t('effort_none') : name;
@@ -439,54 +551,102 @@ dash.loader('status', { fn: function (a) {
     }
     return name;
   }
-  function setFilter(dim, name) { state.filter[dim] = state.filter[dim] === name ? null : name; redrawAll(); }
+  function shortLabel(dim, name, n) { return dim === 'project' ? mid(dimLabel(dim, name), n || 44) : dimLabel(dim, name); }
+  // Rows are rebuilt on every change; the focused row button is found again by its key so keyboard users keep their place.
+  function keepFocus(fn) {
+    var a = document.activeElement, rk = a && a.dataset ? a.dataset.rk : null;
+    fn();
+    if (!rk) return;
+    var hit = Array.prototype.find.call(document.querySelectorAll('.u-rowbtn'), function (b) { return b.dataset.rk === rk && b.offsetParent !== null; });
+    if (hit) hit.focus();
+  }
+  function setFilter(dim, name) { keepFocus(function () { state.filter[dim] = state.filter[dim] === name ? null : name; sync(); redrawAll(); }); }
+  // A button inside the first cell (or row) is what the keyboard reaches; the row's own click handler serves the mouse.
+  function rowButton(label, title, pressed, key) {
+    var b = el('button', 'u-rowbtn', label); b.type = 'button';
+    if (title && title !== label) b.title = title;
+    if (pressed != null) b.setAttribute('aria-pressed', String(pressed));
+    b.dataset.rk = key;
+    return b;
+  }
+
+  // --- header -------------------------------------------------------------------------------
   R('filters', function (e) {
-    e.replaceChildren();
-    if (!anyFilter()) { e.textContent = t('flt_hint'); return; }
+    var any = anyFilter();
+    e.replaceChildren(); e.hidden = !any;
+    e.closest('.u-bar').classList.toggle('u-filtered', any);
+    if (!any) return;
+    e.appendChild(el('span', null, t('flt_by')));
     DIMS.forEach(function (d) {
       if (state.filter[d] == null) return;
-      var c = el('button', 'u-chip', t('flt_' + d) + ': ' + dimLabel(d, state.filter[d]) + '  ×'); c.type = 'button';
+      var label = t('flt_' + d) + ': ' + shortLabel(d, state.filter[d], 36), c = el('button', 'u-chip', label + '  ×'); c.type = 'button';
+      c.title = dimLabel(d, state.filter[d]); c.setAttribute('aria-label', t('flt_remove', { what: label }));
       c.addEventListener('click', function () { setFilter(d, state.filter[d]); });
       e.appendChild(c);
     });
     var clr = el('button', 'u-chip clear', t('flt_clear')); clr.type = 'button';
-    clr.addEventListener('click', function () { DIMS.forEach(function (d) { state.filter[d] = null; }); redrawAll(); });
+    clr.addEventListener('click', function () { DIMS.forEach(function (d) { state.filter[d] = null; }); sync(); redrawAll(); });
     e.appendChild(clr);
   });
-  R('sessnote', function (e) { e.textContent = (state.filter.model != null || state.filter.agent != null || state.filter.effort != null || state.filter.via != null) ? t('sess_nofilter') : ''; });
 
-  // Which parts of the page apply to what was found: no usage rows hides the usage sections, readings recorded by the
-  // Claude app replace the limits that need a reset time.
-  R('wrapstate', function (e, v) {
-    var w = e.closest('.u-wrap'), none = !v.b.rows.length;
-    w.classList.toggle('u-nousage', none);
-    w.classList.toggle('u-nolimits', none && !v.b.limits.length && !v.b.app);
-    w.classList.toggle('u-applim', !v.b.limits.length && !!v.b.app);
-  });
-  R('lead', function (e, v) {
-    if (!v.b.rows.length) { e.textContent = t('no_usage'); return; }
-    var cost = v.tot.cost || 1;
-    rich(e, 'lead', {
-      period: v.hourly ? t('period_24h') : t('period_range', { from: fDayY(v.start), to: fDayY(v.b.now) }),
-      tokens: fmtTok(v.tot.tokens), cost: fmtCost(v.tot.cost),
-      model: v.byModel.length ? v.byModel[0].name + ' (' + fmtPct(100 * v.byModel[0].cost / cost) + ')' : '—',
-      project: v.byProject.length ? v.byProject[0].name + ' (' + fmtPct(100 * v.byProject[0].cost / cost) + ')' : '—'
+  // State notes are quiet chips, notes that need attention are one line each.
+  var STATE_NOTES = { limits_off: 'chip_limits_off', prices_offline: 'chip_prices_offline' };
+  function noteText(n) { return typeof n === 'string' ? n : t('note_' + n.code, { why: n.why ? t('why_' + n.why) : '', detail: n.detail || '' }); }
+  R('notes', function (e, v) {
+    e.replaceChildren();
+    var notes = v.b.notes;
+    e.hidden = !notes.length;
+    notes.forEach(function (n) {
+      if (typeof n !== 'string' && STATE_NOTES[n.code]) { var p = el('span', 'u-pill', t(STATE_NOTES[n.code])); p.title = noteText(n); e.appendChild(p); }
+      else e.appendChild(el('div', 'u-strip', noteText(n)));
     });
   });
-  R('snap', function (e, v) {
-    var age = Date.now() - v.b.now;
-    e.textContent = t('snap', { time: fDT(v.b.now) }) + (age > 6e4 ? ' ' + t('ago', { d: dur(age) }) : '');
-    e.style.color = age > 24 * 36e5 ? 'var(--color-warn)' : '';
+
+  // Update notice: the page side of the update contract. The native bridge does the work; without it (development page) the text only.
+  var upd = { phase: 'idle', code: null };
+  function startUpdate() {
+    upd = { phase: 'wait', code: null }; dash.draw('update');
+    BRIDGE.postMessage({ cmd: 'update' }).then(function (s) {
+      var r = JSON.parse(s);
+      upd = r.ok ? { phase: 'restarting', code: null } : { phase: 'error', code: r.error };
+      dash.draw('update');
+    }).catch(function () { upd = { phase: 'error', code: 'update_install_failed' }; dash.draw('update'); });
+  }
+  R('update', function (e, v) {
+    e.replaceChildren();
+    var u = v.b.update;
+    e.hidden = !(u && u.version);
+    if (e.hidden) return;
+    e.appendChild(el('span', null, t('update_available', { v: u.version })));
+    if (!BRIDGE) return;
+    var busy = upd.phase === 'wait' || upd.phase === 'restarting', btn = el('button', 'l-btn', t('btn_update'));
+    btn.type = 'button'; btn.disabled = busy;
+    btn.addEventListener('click', startUpdate);
+    e.appendChild(btn);
+    if (upd.phase === 'wait') e.appendChild(el('span', 'u-lab', t('update_wait')));
+    else if (upd.phase === 'restarting') e.appendChild(el('span', 'u-lab', t('update_restarting')));
+    else if (upd.phase === 'error') { var k = 'err_' + upd.code; e.appendChild(el('span', 'u-err', t(t(k) === k ? 'err_update_install_failed' : k))); }
   });
+
+  // Which parts of the page apply to what was found: no usage rows shows the calm line instead of the usage sections;
+  // without live limits the weekly blocks go and the readings the Claude app recorded take their place.
+  R('wrapstate', function (e, v) {
+    var w = e.closest('.u-wrap');
+    w.classList.toggle('u-nousage', !v.b.rows.length);
+    w.classList.toggle('u-nolive', !v.b.limits.length);
+  });
+
+  // --- overview -----------------------------------------------------------------------------
   R('big', function (e, v) { e.textContent = state.metric === 'cost' ? fmtCost0(v.tot.cost) : fmtTok(v.tot.tokens); });
-  R('biglabel', function (e, v) { e.textContent = t(state.metric === 'cost' ? 'big_cost' : 'big_tokens') + (v.hourly ? t('span_24h') : t('span_days', { n: v.buckets.length })); });
+  R('biglabel', function (e, v) { e.textContent = t(state.metric === 'cost' ? 'big_cost' : 'big_tokens') + (v.hourly ? t('span_today') : t('span_days', { n: v.buckets.length })); });
+  R('bigcap', function (e) { e.textContent = state.metric === 'cost' ? t('big_caption') : ''; });
   R('delta', function (e, v) {
     if (!v.prev) { e.textContent = t('delta_nodata'); return; }
-    var cur = state.metric === 'cost' ? v.tot.cost : v.tot.tokens, p = state.metric === 'cost' ? v.prev.cost : v.prev.tokens;
+    var cur = mval(v.tot), p = mval(v.prev);
     if (!p) { e.textContent = t('delta_zero'); return; }
     var ch = 100 * (cur - p) / p;
     e.replaceChildren(el('b', null, (ch >= 0 ? '+' : '−') + fmtPct0(Math.abs(ch))),
-      document.createTextNode(' ' + t('delta', { span: v.hourly ? t('span2_24h') : t('span2_days', { n: v.buckets.length }), prev: fmtVal(p) })));
+      document.createTextNode(' ' + (v.hourly ? t('delta_today', { prev: fmtVal(p) }) : t('delta', { span: t('span2_days', { n: v.buckets.length }), prev: fmtVal(p) }))));
   });
   R('n_msgs', function (e, v) { e.textContent = fmtInt(v.tot.msgs); });
   R('n_sess', function (e, v) { var s = sessView(v); e.textContent = s ? fmtInt(s.length) : '—'; });
@@ -496,129 +656,323 @@ dash.loader('status', { fn: function (a) {
     return v.buckets.map(function (d) { return { d: d, v: m.get(v.bkey(d)) }; });
   }
   R('avg_label', function (e, v) { e.textContent = t(v.hourly ? 'avg_hour' : 'avg_day'); });
-  R('avg', function (e, v) { e.textContent = fmtVal((state.metric === 'cost' ? v.tot.cost : v.tot.tokens) / v.buckets.length); });
+  R('avg', function (e, v) { e.textContent = fmtVal(mval(v.tot) / Math.max(1, v.buckets.length)); });
   R('peak_label', function (e, v) { var bt = bucketTotals(v), p = bt[d3.maxIndex(bt, function (x) { return x.v; })]; e.textContent = t(v.hourly ? 'peak_hour' : 'peak_day') + (p && p.v ? ' (' + (v.hourly ? fHour(p.d) : fDay(p.d)) + ')' : ''); });
   R('peak', function (e, v) { var bt = bucketTotals(v); e.textContent = fmtVal(d3.max(bt, function (x) { return x.v; }) || 0); });
   R('charttitle', function (e, v) { e.textContent = t('chart_title', { by: t(v.hourly ? 'by_hour' : 'by_day'), what: t(state.metric === 'cost' ? 'what_cost' : 'what_tokens') }); });
-  R('t_all', function (e, v) { e.textContent = fmtTok(v.tot.tokens); });
-  R('t_read', function (e, v) { e.textContent = fmtTok(v.tot.cache_read); });
-  R('t_unc', function (e, v) { e.textContent = fmtTok(v.tot.input + v.tot.cache_write); });
-  R('t_out', function (e, v) { e.textContent = fmtTok(v.tot.output); });
-  R('t_cost', function (e, v) { e.textContent = fmtCost(v.tot.cost); });
-  R('t_saved', function (e, v) { e.textContent = fmtCost(v.tot.saved); });
 
-  function barAndLegend(barName, legName, parts) {
-    R(barName, function (e, v) {
-      e.replaceChildren();
-      var ps = parts(v), tot = d3.sum(ps, function (p) { return p.v; }) || 1;
-      ps.forEach(function (p) { if (!p.v) return; var s = el('span'); s.style.flex = Math.max(p.v, tot * 0.004) + ' 0 0'; s.style.background = p.c; e.appendChild(s); });
-    });
-    R(legName, function (e, v) {
-      e.replaceChildren();
-      var ps = parts(v), tot = d3.sum(ps, function (p) { return p.v; }) || 1;
-      ps.forEach(function (p) {
-        var d = el('span'), i = el('i'); i.style.background = p.c;
-        d.append(i, document.createTextNode(t(p.l)), el('b', null, p.f(p.v) + (p.pct ? ' · ' + fmtPct(100 * p.v / tot) : '')));
-        e.appendChild(d);
-      });
-    });
+  function inProject(r) { return state.filter.project == null || r.project === state.filter.project; }
+  function errRows(v) {
+    var d = dash.data('errors'); if (d.status !== 'ok') return [];
+    return d.data.map(function (r) { return { hour: new Date(r.hour), kind: r.kind, project: r.project, n: +r.n }; })
+      .filter(function (r) { return r.hour >= v.start && inProject(r); });
   }
-  barAndLegend('typebar', 'typelegend', function (v) {
-    return [
-      { l: 'ty_in', v: v.tot.input, c: dash.colors[0], f: fmtTok },
-      { l: 'ty_read', v: v.tot.cache_read, c: 'var(--cds-chart-muted)', f: fmtTok, pct: true },
-      { l: 'ty_write', v: v.tot.cache_write, c: dash.colors[1], f: fmtTok, pct: true },
-      { l: 'ty_out', v: v.tot.output, c: dash.colors[2], f: fmtTok, pct: true }
-    ];
-  });
-  barAndLegend('subbar', 'sublegend', function (v) {
-    var get = function (s) { var x = v.bySub.find(function (r) { return r.name === s; }); return x ? x.cost : 0; };
-    return [
-      { l: 'sub_main', v: get(0), c: dash.colors[0], f: fmtCost, pct: true },
-      { l: 'sub_agents', v: get(1), c: dash.colors[1], f: fmtCost, pct: true }
-    ];
-  });
-
-  function emptyRow(e, cols, key) { var td = el('td', null, t(key)); td.colSpan = cols; td.style.textAlign = 'left'; td.style.color = 'var(--color-fg-muted)'; var tr = el('tr'); tr.appendChild(td); e.appendChild(tr); }
-  function breakdown(name, dim, colorFn, limit, skipEmpty) {
-    R(name, function (e, v) {
-      e.replaceChildren();
-      var all = v.by[dim], total = d3.sum(all, function (r) { return r.cost; }) || 1;
-      if (skipEmpty) all = all.filter(function (r) { return r.name !== ''; });
-      if (!all.length) { emptyRow(e, 4, 'none_period'); return; }
-      var rows = all.slice(0, limit), sel = state.filter[dim];
-      if (sel != null && !rows.some(function (r) { return r.name === sel; })) {
-        var hit = all.find(function (r) { return r.name === sel; });
-        if (hit) rows.push(hit);
-      }
-      var shown = new Set(rows.map(function (r) { return r.name; })), rest = all.filter(function (r) { return !shown.has(r.name); });
-      if (rest.length) rows.push({ name: null, label: t('other_n', { n: rest.length }), cost: d3.sum(rest, function (r) { return r.cost; }), tokens: d3.sum(rest, function (r) { return r.tokens; }), other: true });
-      var max = d3.max(rows, function (r) { return r.cost; }) || 1;
-      rows.forEach(function (r) {
-        var tr = el('tr'), td = el('td'), w = el('div', 'u-model'), bar = el('i');
-        bar.style.width = (100 * r.cost / max) + '%'; bar.style.background = r.other ? 'var(--cds-chart-muted)' : colorFn(r, v);
-        w.append(el('span', null, r.other ? r.label : dimLabel(dim, r.name)), bar); td.appendChild(w);
-        tr.append(td, el('td', null, fmtCost(r.cost)), el('td', null, fmtPct(100 * r.cost / total)), el('td', null, fmtTok(r.tokens)));
-        if (!r.other) {
-          tr.className = 'u-click' + (sel === r.name ? ' sel' : sel != null ? ' dim' : '');
-          tr.tabIndex = 0; tr.setAttribute('role', 'button'); tr.setAttribute('aria-pressed', String(sel === r.name));
-          tr.addEventListener('click', function () { setFilter(dim, r.name); });
-          tr.addEventListener('keydown', function (ev) { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); setFilter(dim, r.name); } });
-        }
-        e.appendChild(tr);
-      });
-    });
+  function compRows(v) {
+    var d = dash.data('compactions'); if (d.status !== 'ok') return [];
+    return d.data.filter(function (r) { return new Date(r.t) >= v.start && inProject(r); });
   }
-  breakdown('models', 'model', function (r, v) { return v.b.colorOf[r.name]; }, 8);
-  breakdown('projects', 'project', function () { return dash.colors[0]; }, 8);
-  breakdown('agents', 'agent', function () { return dash.colors[1]; }, 10);
-  breakdown('efforts', 'effort', function () { return dash.colors[2]; }, 8);
-  breakdown('vias', 'via', function (r) { return r.name.slice(0, 4) === 'mcp:' ? dash.colors[3] : dash.colors[4]; }, 12, true);
-
-  R('sessions', function (e, v) {
+  R('health', function (e, v) {
     e.replaceChildren();
-    var s = sessView(v);
-    if (!s) return;
-    s.slice(0, 10).forEach(function (r) {
-      var i = r.info || {}, tr = el('tr'), td = el('td', 'u-wrapcell');
-      td.append(document.createTextNode(i.title || t('untitled')), el('small', null, (i.id || '') + ' · ' + t('calls_total', { n: fmtInt(i.msgs || 0) })));
-      tr.append(td, el('td', null, i.project || '—'), el('td', null, i.end ? fDT(new Date(i.end)) : '—'), el('td', null, fmtCost(r.cost)), el('td', null, fmtTok(r.tokens)));
-      var pick = function () { state.session = state.session === r.s ? null : r.s; dash.draw('sessions'); dash.draw('ctx'); };
-      tr.className = 'u-click' + (state.session === r.s ? ' sel' : '');
-      tr.tabIndex = 0; tr.setAttribute('role', 'button'); tr.setAttribute('aria-pressed', String(state.session === r.s));
-      tr.addEventListener('click', pick);
-      tr.addEventListener('keydown', function (ev) { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); pick(); } });
+    var errs = d3.sum(errRows(v), function (r) { return r.n; }), comps = compRows(v).length, notes = v.b.notes;
+    function part(key, n, dot) {
+      var b = el('button', 'u-hl'), i = el('i', dot); b.type = 'button'; b.title = t('hl_go');
+      b.append(i, document.createTextNode(t(key, { n: fmtInt(n) })));
+      b.addEventListener('click', function () { goTab('sessions', 'u-problems'); });
+      e.appendChild(b);
+    }
+    part('hl_errors', errs, errs ? 'warn' : '');
+    part('hl_comp', comps, 'none');
+    var unpriced = notes.some(function (n) { return n.code === 'unpriced'; }), approx = notes.some(function (n) { return n.code === 'approx_pricing'; });
+    var p = el('span', 'u-hl'), i = el('i', unpriced || approx ? 'warn' : '');
+    p.append(i, document.createTextNode(t(unpriced ? 'hl_pricing_unpriced' : approx ? 'hl_pricing_approx' : 'hl_pricing_ok')));
+    e.appendChild(p);
+  });
+
+  // The top three of two dimensions and the biggest session; a click filters (stays here) or opens the session.
+  function topCard(titleKey, dim, v) {
+    var card = el('div'), all = byMetric(v.by[dim]), total = d3.sum(all, mval) || 1, rows = all.slice(0, 3), sel = state.filter[dim];
+    card.appendChild(el('h3', 'u-h3', t(titleKey)));
+    if (sel != null && !rows.some(function (r) { return r.name === sel; })) {
+      var hit = all.find(function (r) { return r.name === sel; });
+      if (hit) rows = rows.slice(0, 2).concat([hit]);
+    }
+    if (!rows.length) card.appendChild(el('p', 'u-line', t('none_period')));
+    rows.forEach(function (r) {
+      var row = el('div', 'u-trow u-frow' + (sel === r.name ? ' sel' : sel != null ? ' dim' : '')), tr = el('span', 'u-mini-track'), fill = el('i');
+      var btn = rowButton(shortLabel(dim, r.name, 28), dimLabel(dim, r.name), sel === r.name, dim + '\u0001' + r.name);
+      if (dim === 'model') { var sw = el('i', 'u-dot'), st = v.b.colorOf[r.name]; if (st) { sw.style.background = st.c; sw.style.opacity = st.o; } btn.prepend(sw); }
+      fill.style.width = Math.max(1, 100 * mval(r) / total) + '%'; tr.appendChild(fill); tr.title = fmtPct(100 * mval(r) / total);
+      row.append(btn, tr, el('span', 'u-val-n', fmtVal(mval(r))));
+      row.addEventListener('click', function () { setFilter(dim, r.name); });
+      card.appendChild(row);
+    });
+    return card;
+  }
+  R('top', function (e, v) {
+    e.replaceChildren();
+    e.appendChild(topCard('top_projects', 'project', v));
+    e.appendChild(topCard('top_models', 'model', v));
+    var card = el('div'), s = sessView(v), r = s && s[0];
+    card.appendChild(el('h3', 'u-h3', t('top_session')));
+    if (!r) card.appendChild(el('p', 'u-line', t('none_period')));
+    else {
+      var i = r.info || {}, row = el('div', 'u-trow u-orow'), btn = rowButton(i.title || t('untitled'), i.title || '', null, 'top-session');
+      btn.prepend(el('span', 'u-chev')); btn.setAttribute('aria-label', t('top_open') + ': ' + (i.title || t('untitled')));
+      row.style.gridTemplateColumns = 'minmax(0, 1fr) auto';
+      row.append(btn, el('span', 'u-val-n', fmtVal(mval(r))));
+      row.addEventListener('click', function () { state.session = r.s; dash.draw('sessions'); goTab('sessions', 'u-opensess'); });
+      card.appendChild(row);
+      if (i.project) card.appendChild(el('div', 'u-hint', mid(i.project, 40))).title = i.project;
+    }
+    e.appendChild(card);
+  });
+
+  // --- plan limits --------------------------------------------------------------------------
+  function meterColor(pct) { return pct >= 90 ? 'var(--color-bad)' : pct >= 70 ? 'var(--color-warn)' : 'var(--color-ok)'; }
+  function meterEl(key, pct, lines) {
+    var box = el('div'), top = el('div', 'u-lim-top'), meter = el('div', 'u-meter'), fill = el('span'), sub = el('div', 'u-lim-sub');
+    top.append(el('span', null, t('lim_' + key)), el('b', null, fmtPct0(pct)));
+    fill.style.width = Math.min(100, pct) + '%'; fill.style.background = meterColor(pct);
+    meter.appendChild(fill); box.append(top, meter);
+    (lines || []).forEach(function (ln) { sub.appendChild(lineEl(ln)); });
+    if (lines && lines.length) box.appendChild(sub);
+    return box;
+  }
+  // A line is [key, vars, plain]; plain lines are not bolded.
+  function lineEl(ln) {
+    var d = el('div');
+    if (ln[2]) d.textContent = t(ln[0], ln[1] || undefined); else rich(d, ln[0], ln[1]);
+    return d;
+  }
+  function limitModel(l, v) {
+    var pct = +l.percentUsed, reset = new Date(l.resetsAt), left = reset - Date.now();
+    var m = { key: l.key, pct: pct, lines: [], hit: null, end: null, room: null };
+    m.reset = left > 0 ? ['lim_reset', { d: dur(left), at: fDT(reset) }, true] : ['lim_passed', null, true];
+    m.lines.push(m.reset);
+    if (l.key === 'five_hour' && left > 0 && pct > 0) {
+      var s5 = new Date(+reset - 5 * 36e5), f5 = (v.b.now - s5) / (5 * 36e5), h5 = +d3.utcHour.floor(s5);
+      // Rows are whole hours: of the hour the window starts in, count only the part inside the window.
+      var part5 = 1 - (+s5 - h5) / 36e5;
+      var c5 = d3.sum(v.b.rows, function (r) { return +r.hour > h5 ? r.cost : +r.hour === h5 ? r.cost * part5 : 0; });
+      m.lines.push(['lim_5h', { cost: fmtCost(c5), per: fmtCost(c5 / pct) }]);
+      if (f5 > 0.05 && f5 < 1) {
+        var e5 = pct / f5;
+        if (e5 >= 100) m.hit = ['pace5_hit', { at: fDT(new Date(+s5 + (100 / e5) * 5 * 36e5)) }];
+        else m.end = ['pace5_end', { pct: fmtPct0(e5) }];
+        m.lines.push(m.hit || m.end);
+      }
+    }
+    if (l.key === 'seven_day' && left > 0) {
+      var ws = new Date(+reset - 7 * 864e5), frac = (v.b.now - ws) / (7 * 864e5);
+      var wc = d3.sum(v.b.rows, function (r) { return r.hour >= ws ? r.cost : 0; });
+      m.lines.push(pct > 0 ? ['lim_week', { cost: fmtCost(wc), per: fmtCost(wc / pct) }] : ['lim_week_only', { cost: fmtCost(wc) }]);
+      if (pct > 0 && frac > 0.02) {
+        var endPct = pct / frac;
+        if (endPct >= 100) m.hit = ['pace_hit', { at: fDT(new Date(+ws + (100 / endPct) * 7 * 864e5)) }];
+        else m.end = ['pace_end', { pct: fmtPct0(endPct) }];
+        m.lines.push(m.hit || m.end);
+      }
+      if (pct > 0 && pct < 100 && wc > 0) {
+        var room = (100 - pct) * wc / pct;
+        m.room = ['lim_left', { cost: '~' + fmtCost0(room), perday: fmtCost0(room / Math.max(1, left / 864e5)) }];
+        m.lines.push(m.room);
+      }
+    }
+    return m;
+  }
+  // The headline sentence: a predicted hit of a limit, else where the week ends and the room left, else when it resets.
+  function verdictLines(ms) {
+    var five = ms.find(function (m) { return m.key === 'five_hour'; }), week = ms.find(function (m) { return m.key === 'seven_day'; }), out = [];
+    if (five && five.hit) out.push(five.hit);
+    if (week && week.hit) out.push(week.hit);
+    if (!out.length && week && week.end) { out.push(week.end); if (week.room) out.push(week.room); }
+    if (!out.length && five && five.end) out.push(five.end);
+    if (!out.length && (week || five)) out.push((week || five).reset);
+    return out;
+  }
+  R('ovlim', function (e, v) {
+    e.replaceChildren();
+    var live = v.b.limits, app = v.b.app;
+    e.hidden = !v.b.rows.length && !live.length && !app;
+    var head = el('div', 'u-cardhead'), more = el('button', 'u-link', t('lim_details')), verdict = el('div', 'u-verdict'), meters = el('div', 'u-meters');
+    more.type = 'button'; more.addEventListener('click', function () { goTab('limits'); });
+    head.append(el('h2', 'u-h', t('h_limits')), more);
+    e.appendChild(head);
+    if (live.length) {
+      var ms = live.map(function (l) { return limitModel(l, v); });
+      verdictLines(ms).forEach(function (ln) { verdict.appendChild(lineEl(ln)); });
+      ms.forEach(function (m) { meters.appendChild(meterEl(m.key, m.pct, [m.reset])); });
+    } else if (app) {
+      verdict.textContent = t('lim_app_at', { time: fDT(new Date(app.t)) });
+      ['five_hour', 'seven_day'].forEach(function (k) { meters.appendChild(meterEl(k, +app[k])); });
+    } else verdict.textContent = t('lim_none');
+    e.append(verdict);
+    if (meters.children.length) e.appendChild(meters);
+  });
+  R('limits', function (e, v) {
+    e.replaceChildren();
+    var live = v.b.limits, app = v.b.app;
+    e.style.display = live.length || app ? '' : 'block';
+    live.forEach(function (l) { var m = limitModel(l, v); e.appendChild(meterEl(m.key, m.pct, m.lines)); });
+    if (live.length) return;
+    if (app) {
+      // The percentages the Claude app recorded: no reset time is known, so no countdown, pace or room left.
+      ['five_hour', 'seven_day'].forEach(function (k) { e.appendChild(meterEl(k, +app[k])); });
+      e.appendChild(el('div', 'u-lim-sub u-lim-note', t('lim_app_at', { time: fDT(new Date(app.t)) })));
+      return;
+    }
+    e.textContent = t('lim_none');
+  });
+
+  // --- breakdown ----------------------------------------------------------------------------
+  R('bkhint', function (e) { e.textContent = t('bk_hint') + (state.dim === 'via' ? ' ' + t('h_via_hint') : ''); });
+  R('agentsum', function (e, v) {
+    e.hidden = state.dim !== 'agent';
+    if (e.hidden) return;
+    var all = v.by.agent, main = all.find(function (r) { return r.name === 'main'; }), mainV = main ? mval(main) : 0, subV = d3.sum(all, mval) - mainV, tot = (mainV + subV) || 1;
+    var bar = e.querySelector('.u-bar2'), leg = e.querySelector('.u-legend');
+    bar.replaceChildren(); leg.replaceChildren();
+    [['sub_main', mainV, 'var(--u-t1)'], ['sub_agents', subV, 'var(--u-t3)']].forEach(function (p) {
+      if (p[1]) { var s = el('span'); s.style.flex = Math.max(p[1], tot * 0.004) + ' 0 0'; s.style.background = p[2]; bar.appendChild(s); }
+      var d = el('span'), i = el('i'); i.style.background = p[2];
+      d.append(i, document.createTextNode(t(p[0])), el('b', null, fmtVal(p[1]) + ' · ' + fmtPct(100 * p[1] / tot)));
+      leg.appendChild(d);
+    });
+  });
+  R('bkhead', function (e) {
+    e.replaceChildren();
+    var cols = [['th_' + state.dim, ''], [state.metric === 'cost' ? 'th_cost' : 'th_tokens', 'u-num'], ['th_share', 'u-num'], [state.metric === 'cost' ? 'th_tokens' : 'th_cost', 'u-num']];
+    cols.forEach(function (c) { e.appendChild(el('th', c[1], t(c[0]))); });
+  });
+  function emptyRow(e, cols, key) { var td = el('td', null, t(key)); td.colSpan = cols; td.style.color = 'var(--color-fg-muted)'; var tr = el('tr'); tr.appendChild(td); e.appendChild(tr); }
+  R('bkbody', function (e, v) {
+    e.replaceChildren();
+    var dim = state.dim, all = byMetric(v.by[dim]), total = d3.sum(all, mval) || 1;
+    if (dim === 'via') all = all.filter(function (r) { return r.name !== ''; });
+    if (!all.length) { emptyRow(e, 4, 'none_period'); return; }
+    var rows = all.slice(0, 12), sel = state.filter[dim];
+    if (sel != null && !rows.some(function (r) { return r.name === sel; })) {
+      var hit = all.find(function (r) { return r.name === sel; });
+      if (hit) rows.push(hit);
+    }
+    var shown = new Set(rows.map(function (r) { return r.name; })), rest = all.filter(function (r) { return !shown.has(r.name); });
+    if (rest.length) rows.push({ name: null, label: t('other_n', { n: rest.length }), cost: d3.sum(rest, function (r) { return r.cost; }), tokens: d3.sum(rest, function (r) { return r.tokens; }), other: true });
+    rows.forEach(function (r) {
+      var tr = el('tr'), td = el('td'), share = el('td', 'u-num'), box = el('div', 'u-share'), track = el('span', 'u-track'), fill = el('i'), pct = 100 * mval(r) / total;
+      fill.style.width = Math.max(0, Math.min(100, pct)) + '%'; track.appendChild(fill);
+      box.append(track, el('span', null, fmtPct(pct))); share.appendChild(box);
+      if (r.other) td.appendChild(document.createTextNode(r.label));
+      else {
+        var btn = rowButton(shortLabel(dim, r.name, 60), dimLabel(dim, r.name), sel === r.name, dim + '\u0001' + r.name);
+        if (dim === 'model') { var sw = el('i', 'u-dot'), st = v.b.colorOf[r.name]; if (st) { sw.style.background = st.c; sw.style.opacity = st.o; } td.appendChild(sw); }
+        td.appendChild(btn);
+        tr.className = 'u-frow' + (sel === r.name ? ' sel' : sel != null ? ' dim' : '');
+        tr.addEventListener('click', function () { setFilter(dim, r.name); });
+      }
+      tr.append(td, el('td', 'u-num', fmtVal(mval(r))), share, el('td', 'u-num', fmtOther(r)));
       e.appendChild(tr);
     });
   });
 
-  // Context size per call along the chosen session's main thread; dashed lines mark compactions.
-  R('ctx', function (e) {
+  R('t_all', function (e, v) { e.textContent = fmtTok(v.tot.tokens); });
+  R('t_read', function (e, v) { e.textContent = fmtTok(v.tot.cache_read); });
+  R('t_unc', function (e, v) { e.textContent = fmtTok(v.tot.input + v.tot.cache_write); });
+  R('t_out', function (e, v) { e.textContent = fmtTok(v.tot.output); });
+  R('t_saved', function (e, v) { e.textContent = fmtCost(v.tot.saved); });
+  function typeParts(v) {
+    return [
+      { l: 'ty_in', v: v.tot.input, c: 'var(--u-t1)' },
+      { l: 'ty_read', v: v.tot.cache_read, c: 'var(--u-t3)', pct: true },
+      { l: 'ty_write', v: v.tot.cache_write, c: 'var(--u-t2)', pct: true },
+      { l: 'ty_out', v: v.tot.output, c: 'var(--u-t4)', pct: true }
+    ];
+  }
+  R('typebar', function (e, v) {
     e.replaceChildren();
-    if (state.session == null) { e.appendChild(el('div', 'u-smallnote', t('ctx_hint'))); return; }
+    var ps = typeParts(v), tot = d3.sum(ps, function (p) { return p.v; }) || 1;
+    ps.forEach(function (p) { if (!p.v) return; var s = el('span'); s.style.flex = Math.max(p.v, tot * 0.004) + ' 0 0'; s.style.background = p.c; e.appendChild(s); });
+  });
+  R('typelegend', function (e, v) {
+    e.replaceChildren();
+    var ps = typeParts(v), tot = d3.sum(ps, function (p) { return p.v; }) || 1;
+    ps.forEach(function (p) {
+      var d = el('span'), i = el('i'); i.style.background = p.c;
+      d.append(i, document.createTextNode(t(p.l)), el('b', null, fmtTok(p.v) + (p.pct ? ' · ' + fmtPct(100 * p.v / tot) : '')));
+      e.appendChild(d);
+    });
+  });
+
+  // Weekday by hour of day (local time), for the selected period and filters; not for Today (one day has no pattern).
+  R('heatsec', function (e, v) { e.hidden = v.hourly; });
+  R('heat', function (e, v) {
+    e.replaceChildren();
+    var grid = d3.range(7).map(function () { return new Array(24).fill(0); });
+    // Days brought back from the archive no longer know their hour of day, so they are left out here.
+    v.rows.forEach(function (r) { if (v.b.restored.size && v.b.restored.has(dayKey(r.hour))) return; grid[(r.hour.getDay() + 6) % 7][r.hour.getHours()] += mval(r); });
+    var max = d3.max(grid, function (g) { return d3.max(g); }) || 0;
+    if (!max) { e.appendChild(el('p', 'u-line', t('none_period'))); return; }
+    var W = 1000, ml = 44, ch = 22, cw = (W - ml) / 24, H = 7 * ch + 20;
+    var svg = d3.create('svg').attr('viewBox', '0 0 ' + W + ' ' + H).attr('role', 'img').attr('aria-label', t('h_heat'));
+    var dayName = function (i) { return new Date(2024, 0, 1 + i).toLocaleDateString(APP.lang === 'sl' ? 'sl-SI' : 'en-GB', { weekday: 'short' }); };
+    grid.forEach(function (g, di) {
+      svg.append('text').attr('x', ml - 8).attr('y', di * ch + ch / 2).attr('dy', '0.32em').attr('text-anchor', 'end').text(dayName(di));
+      g.forEach(function (val, h) {
+        var rc = svg.append('rect').attr('x', ml + h * cw + 1).attr('y', di * ch + 1).attr('width', cw - 2).attr('height', ch - 2).attr('rx', 2);
+        if (val) rc.style('fill', 'var(--color-fg)').style('fill-opacity', 0.12 + 0.88 * val / max); else rc.style('fill', 'var(--cds-chart-grid)');
+        rc.append('title').text(dayName(di) + ' ' + (h < 10 ? '0' : '') + h + ':00 · ' + fmtVal(val));
+      });
+    });
+    d3.range(0, 24, 3).forEach(function (h) { svg.append('text').attr('x', ml + h * cw + cw / 2).attr('y', H - 5).attr('text-anchor', 'middle').text((h < 10 ? '0' : '') + h + ':00'); });
+    e.appendChild(svg.node());
+  });
+
+  // --- sessions -----------------------------------------------------------------------------
+  R('sessfollow', function (e) { var on = state.filter.model != null || state.filter.agent != null || state.filter.effort != null || state.filter.via != null; e.hidden = !on; e.textContent = on ? t('sess_nofilter') : ''; });
+  R('sesshead', function (e) {
+    e.replaceChildren();
+    [['th_session', ''], ['th_project', ''], ['th_last', ''], [state.metric === 'cost' ? 'th_cost' : 'th_tokens', 'u-num'], [state.metric === 'cost' ? 'th_tokens' : 'th_cost', 'u-num']]
+      .forEach(function (c) { e.appendChild(el('th', c[1], t(c[0]))); });
+  });
+  R('sessions', function (e, v) {
+    e.replaceChildren();
+    var s = sessView(v);
+    if (!s) return;
+    if (!s.length) { emptyRow(e, 5, 'none_period'); return; }
+    s.slice(0, 10).forEach(function (r) {
+      var i = r.info || {}, tr = el('tr'), td = el('td', 'u-wrapcell'), open = state.session === r.s;
+      var btn = rowButton(i.title || t('untitled'), '', open, 'sess' + r.s);
+      btn.removeAttribute('aria-pressed'); btn.setAttribute('aria-expanded', String(open)); btn.title = t('row_open');
+      btn.prepend(el('span', 'u-chev'));
+      td.append(btn, el('small', null, (i.id || '') + ' · ' + t('calls_total', { n: fmtInt(i.msgs || 0) })));
+      var pj = el('td', null, mid(i.project || '—', 40)); if (i.project) pj.title = i.project;
+      tr.append(td, pj, el('td', null, i.end ? fDT(new Date(i.end)) : '—'), el('td', 'u-num', fmtVal(mval(r))), el('td', 'u-num', fmtOther(r)));
+      tr.className = 'u-orow' + (open ? ' sel' : '');
+      tr.addEventListener('click', function () { keepFocus(function () { state.session = state.session === r.s ? null : r.s; dash.draw('sessions'); }); });
+      e.appendChild(tr);
+      if (open) {
+        var dtr = el('tr', 'u-detail'), dtd = el('td'), box = el('div', 'u-ctx');
+        dtd.colSpan = 5; box.id = 'u-opensess'; ctxInto(box); dtd.appendChild(box); dtr.appendChild(dtd); e.appendChild(dtr);
+      }
+    });
+  });
+
+  // Context size per call along the chosen session's main thread; dashed lines mark compactions.
+  function ctxInto(e) {
     var all = dash.data('sess_ctx').data, info = dash.data('sessions').data[state.session] || {}, c = all[state.session];
     e.appendChild(el('h3', null, t('ctx_title', { title: info.title || t('untitled') })));
-    if (!c) { e.appendChild(el('div', 'u-smallnote', t('ctx_none'))); return; }
+    if (!c) { e.appendChild(el('p', 'u-line', t('ctx_none'))); return; }
     var vals = c[0], marks = c[1], W = 1000, H = 190, ml = 52, mr = 10, mt = 10, mb = 12, peak = d3.max(vals) || 1;
     var x = d3.scaleLinear().domain([0, Math.max(1, vals.length - 1)]).range([ml, W - mr]), y = d3.scaleLinear().domain([0, peak]).nice(3).range([H - mb, mt]);
     var svg = d3.create('svg').attr('viewBox', '0 0 ' + W + ' ' + H).attr('role', 'img').attr('aria-label', t('ctx_title', { title: '' }));
     var ticks = y.ticks(3);
     svg.append('g').selectAll('line').data(ticks).join('line').attr('x1', ml).attr('x2', W - mr).attr('y1', y).attr('y2', y).style('stroke', 'var(--cds-chart-grid)');
     svg.append('g').selectAll('text').data(ticks).join('text').attr('x', ml - 8).attr('y', y).attr('dy', '0.32em').attr('text-anchor', 'end').text(function (d) { return fmtTok(d * 1000); });
-    svg.append('g').selectAll('line').data(marks).join('line').attr('x1', x).attr('x2', x).attr('y1', mt).attr('y2', H - mb).style('stroke', 'var(--color-warn)').style('stroke-dasharray', '3 3');
-    svg.append('path').attr('d', d3.area().x(function (d, i) { return x(i); }).y0(y(0)).y1(function (d) { return y(d); })(vals)).style('fill', dash.colors[1]).style('fill-opacity', 0.18);
-    svg.append('path').attr('d', d3.line().x(function (d, i) { return x(i); }).y(function (d) { return y(d); })(vals)).style('fill', 'none').style('stroke', dash.colors[1]).style('stroke-width', 1.5);
+    svg.append('g').selectAll('line').data(marks).join('line').attr('x1', x).attr('x2', x).attr('y1', mt).attr('y2', H - mb).style('stroke', 'var(--color-fg-muted)').style('stroke-dasharray', '3 3');
+    svg.append('path').attr('d', d3.area().x(function (d, i) { return x(i); }).y0(y(0)).y1(function (d) { return y(d); })(vals)).style('fill', 'var(--color-fg)').style('fill-opacity', 0.08);
+    svg.append('path').attr('d', d3.line().x(function (d, i) { return x(i); }).y(function (d) { return y(d); })(vals)).style('fill', 'none').style('stroke', 'var(--color-fg)').style('stroke-width', 1.5);
     e.appendChild(svg.node());
-    e.appendChild(el('div', 'u-smallnote', t('ctx_note', { n: fmtInt(c[2]), peak: fmtTok(peak * 1000), c: marks.length })));
-  });
-  function inProject(r) { return state.filter.project == null || r.project === state.filter.project; }
-  R('compnote', function (e, v) {
-    var d = dash.data('compactions'); if (d.status !== 'ok') { e.textContent = ''; return; }
-    var rows = d.data.filter(function (r) { return new Date(r.t) >= v.start && inProject(r); });
-    if (!rows.length) { e.textContent = t('comp_none'); return; }
-    var auto = rows.filter(function (r) { return r.trigger === 'auto'; }).length;
-    e.textContent = t('comp_line', { n: fmtInt(rows.length), auto: fmtInt(auto), manual: fmtInt(rows.length - auto), pre: fmtTok(d3.median(rows, function (r) { return +r.pre; }) || 0) });
-  });
+    e.appendChild(el('p', 'u-hint', t('ctx_note', { n: fmtInt(c[2]), peak: fmtTok(peak * 1000), c: marks.length })));
+  }
 
   R('calls', function (e, v) {
     e.replaceChildren();
@@ -631,28 +985,28 @@ dash.loader('status', { fn: function (a) {
     }).sort(function (a, b) { return b.cost - a.cost; }).slice(0, 10);
     if (!rows.length) { emptyRow(e, 6, 'none_period'); return; }
     rows.forEach(function (r) {
-      var info = (ss.status === 'ok' && ss.data[r.s]) || {}, tr = el('tr'), td = el('td', 'u-wrapcell u-left'), tm = el('td');
-      td.append(document.createTextNode(info.title || t('untitled')), el('small', null, r.project || ''));
+      var info = (ss.status === 'ok' && ss.data[r.s]) || {}, tr = el('tr'), td = el('td', 'u-wrapcell'), tm = el('td');
+      td.append(document.createTextNode(info.title || t('untitled')), el('small', null, mid(r.project || '', 40)));
       tm.append(document.createTextNode(r.model), el('small', null, dimLabel('agent', r.agent || 'main') + (r.effort ? ' · ' + r.effort : '')));
-      tr.append(el('td', null, fDT(new Date(r.t))), td, tm, el('td', null, fmtTok(+r.context)), el('td', null, fmtTok(+r.output)), el('td', null, fmtCost(+r.cost)));
+      tr.append(el('td', null, fDT(new Date(r.t))), td, tm, el('td', 'u-num', fmtTok(+r.context)), el('td', 'u-num', fmtTok(+r.output)), el('td', 'u-num', fmtCost(+r.cost)));
       e.appendChild(tr);
     });
   });
-  R('callnote', function (e) { e.textContent = state.filter.via != null ? t('calls_novia') : anyFilter() ? t('calls_filtered') : ''; });
 
-  function errRows(v) {
-    var d = dash.data('errors'); if (d.status !== 'ok') return [];
-    return d.data.map(function (r) { return { hour: new Date(r.hour), kind: r.kind, project: r.project, n: +r.n }; })
-      .filter(function (r) { return r.hour >= v.start && inProject(r); });
-  }
+  R('compnote', function (e, v) {
+    var rows = compRows(v);
+    if (!rows.length) { e.textContent = t('comp_none'); return; }
+    var auto = rows.filter(function (r) { return r.trigger === 'auto'; }).length;
+    e.textContent = t('comp_line', { n: fmtInt(rows.length), auto: fmtInt(auto), manual: fmtInt(rows.length - auto), pre: fmtTok(d3.median(rows, function (r) { return +r.pre; }) || 0) });
+  });
+  R('errnone', function (e, v) { e.hidden = errRows(v).length > 0; e.textContent = t('err_none'); });
+  R('errwrap', function (e, v) { e.hidden = !errRows(v).length; });
   R('errors', function (e, v) {
     e.replaceChildren();
-    var rows = errRows(v);
-    if (!rows.length) { emptyRow(e, 3, 'err_none'); return; }
-    d3.rollups(rows, function (rs) { return { n: d3.sum(rs, function (r) { return r.n; }), last: d3.max(rs, function (r) { return r.hour; }) }; }, function (r) { return r.kind; })
+    d3.rollups(errRows(v), function (rs) { return { n: d3.sum(rs, function (r) { return r.n; }), last: d3.max(rs, function (r) { return r.hour; }) }; }, function (r) { return r.kind; })
       .sort(function (a, b) { return b[1].n - a[1].n; }).forEach(function (x) {
         var i = x[0].indexOf(':'), tr = el('tr');
-        tr.append(el('td', null, t(x[0].slice(0, i) === 'retry' ? 'err_retry' : 'err_final') + ': ' + x[0].slice(i + 1)), el('td', null, fmtInt(x[1].n)), el('td', null, fDT(x[1].last)));
+        tr.append(el('td', null, t(x[0].slice(0, i) === 'retry' ? 'err_retry' : 'err_final') + ': ' + x[0].slice(i + 1)), el('td', 'u-num', fmtInt(x[1].n)), el('td', null, fDT(x[1].last)));
         e.appendChild(tr);
       });
   });
@@ -661,7 +1015,6 @@ dash.loader('status', { fn: function (a) {
     var rows = errRows(v), m = new Map(v.buckets.map(function (d) { return [v.bkey(d), 0]; }));
     rows.forEach(function (r) { var k = v.bkey(r.hour); if (m.has(k)) m.set(k, m.get(k) + r.n); });
     var max = d3.max(Array.from(m.values())) || 0;
-    e.style.display = max ? '' : 'none';
     v.buckets.forEach(function (d) {
       var n = m.get(v.bkey(d)), s = el('span');
       s.style.height = (max ? 100 * n / max : 0) + '%';
@@ -670,29 +1023,7 @@ dash.loader('status', { fn: function (a) {
     });
   });
 
-  // Weekday by hour of day (local time), for the selected period and filters.
-  R('heat', function (e, v) {
-    e.replaceChildren();
-    var grid = d3.range(7).map(function () { return new Array(24).fill(0); });
-    // Days brought back from the archive no longer know their hour of day, so they are left out here.
-    v.rows.forEach(function (r) { if (v.b.restored.size && v.b.restored.has(dayKey(r.hour))) return; grid[(r.hour.getDay() + 6) % 7][r.hour.getHours()] += mval(r); });
-    var max = d3.max(grid, function (g) { return d3.max(g); }) || 0;
-    if (!max) { e.appendChild(el('div', 'u-smallnote', t('none_period'))); return; }
-    var W = 1000, ml = 44, ch = 22, cw = (W - ml) / 24, H = 7 * ch + 20;
-    var svg = d3.create('svg').attr('viewBox', '0 0 ' + W + ' ' + H).attr('role', 'img').attr('aria-label', t('h_heat'));
-    var dayName = function (i) { return new Date(2024, 0, 1 + i).toLocaleDateString(APP.lang === 'sl' ? 'sl-SI' : 'en-GB', { weekday: 'short' }); };
-    grid.forEach(function (g, di) {
-      svg.append('text').attr('x', ml - 8).attr('y', di * ch + ch / 2).attr('dy', '0.32em').attr('text-anchor', 'end').text(dayName(di));
-      g.forEach(function (val, h) {
-        var rc = svg.append('rect').attr('x', ml + h * cw + 1).attr('y', di * ch + 1).attr('width', cw - 2).attr('height', ch - 2).attr('rx', 2);
-        if (val) rc.style('fill', dash.colors[0]).style('fill-opacity', 0.12 + 0.88 * val / max); else rc.style('fill', 'var(--cds-chart-grid)');
-        rc.append('title').text(dayName(di) + ' ' + (h < 10 ? '0' : '') + h + ':00 · ' + fmtVal(val));
-      });
-    });
-    d3.range(0, 24, 3).forEach(function (h) { svg.append('text').attr('x', ml + h * cw + cw / 2).attr('y', H - 5).attr('text-anchor', 'middle').text((h < 10 ? '0' : '') + h + ':00'); });
-    e.appendChild(svg.node());
-  });
-
+  // --- limits tab ---------------------------------------------------------------------------
   // Quota weeks: reset to reset, counted back from the current weekly reset time.
   R('qweeks', function (e, v) {
     e.replaceChildren();
@@ -709,11 +1040,13 @@ dash.loader('status', { fn: function (a) {
     }
     var max = d3.max(weeks, function (w) { return w.cost; }) || 1;
     weeks.forEach(function (w) {
-      var tr = el('tr'), td = el('td'), box = el('div', 'u-model'), bar = el('i');
-      bar.style.width = (100 * w.cost / max) + '%'; bar.style.background = w.k === 0 ? dash.colors[0] : 'var(--cds-chart-muted)';
-      box.append(el('span', null, fDay(w.start) + ' – ' + fDay(w.end) + (w.k === 0 ? ' (' + t('qw_current') + ')' : '')), bar); td.appendChild(box);
-      tr.append(td, el('td', null, fmtCost(w.cost)), el('td', null, fmtTok(w.tokens)),
-        el('td', null, w.pct == null ? '—' : fmtPct0(w.pct) + ' ' + t(w.k === 0 ? 'qw_sofar' : 'qw_lastseen')));
+      var tr = el('tr'), td = el('td'), box = el('div', 'u-share'), track = el('span', 'u-track'), fill = el('i');
+      fill.style.width = (100 * w.cost / max) + '%'; track.appendChild(fill);
+      var lab = el('span', null, fDay(w.start) + ' – ' + fDay(w.end) + (w.k === 0 ? ' (' + t('qw_current') + ')' : ''));
+      if (w.k === 0) lab.style.fontWeight = 'var(--cds-font-weight-medium)';
+      box.style.justifyContent = 'flex-start'; box.append(lab, track); td.appendChild(box);
+      tr.append(td, el('td', 'u-num', fmtCost(w.cost)), el('td', 'u-num', fmtTok(w.tokens)),
+        el('td', 'u-num', w.pct == null ? '—' : fmtPct0(w.pct) + ' ' + t(w.k === 0 ? 'qw_sofar' : 'qw_lastseen')));
       e.appendChild(tr);
     });
   });
@@ -732,73 +1065,12 @@ dash.loader('status', { fn: function (a) {
     Array.from(agg.values()).sort(function (a, b) { return a.id.join('\u0001') < b.id.join('\u0001') ? -1 : 1; }).forEach(function (a) {
       lines.push(a.id.map(cell).concat(a.n.map(function (x, i) { return nums[i] === 'cost' ? x.toFixed(4) : String(Math.round(x)); })).join(','));
     });
-    var url = URL.createObjectURL(new Blob(['\ufeff' + lines.join('\r\n') + '\r\n'], { type: 'text/csv;charset=utf-8' })), a = document.createElement('a');
+    var url = URL.createObjectURL(new Blob(['﻿' + lines.join('\r\n') + '\r\n'], { type: 'text/csv;charset=utf-8' })), a = document.createElement('a');
     a.href = url; a.download = 'burnboard-' + state.range + '-' + dayKey(v.b.now) + '.csv';
     document.body.appendChild(a); a.click(); a.remove();
     setTimeout(function () { URL.revokeObjectURL(url); }, 10000);
   }
   document.querySelectorAll('[data-export]').forEach(function (b) { b.addEventListener('click', exportCsv); });
-
-  R('limits', function (e, v) {
-    e.replaceChildren();
-    v.b.limits.forEach(function (l) {
-      var pct = +l.percentUsed, reset = new Date(l.resetsAt), left = reset - Date.now();
-      var box = el('div'), top = el('div', 'u-lim-top'), meter = el('div', 'u-meter'), fill = el('span'), sub = el('div', 'u-lim-sub');
-      top.append(el('span', null, t('lim_' + l.key)), el('b', null, fmtPct0(pct)));
-      fill.style.width = Math.min(100, pct) + '%';
-      fill.style.background = pct >= 90 ? 'var(--color-bad)' : pct >= 70 ? 'var(--color-warn)' : 'var(--color-ok)';
-      meter.appendChild(fill);
-      sub.appendChild(document.createTextNode(left > 0 ? t('lim_reset', { d: dur(left), at: fDT(reset) }) : t('lim_passed')));
-      if (l.key === 'five_hour' && left > 0 && pct > 0) {
-        var s5 = new Date(+reset - 5 * 36e5), f5 = (v.b.now - s5) / (5 * 36e5), h5 = +d3.utcHour.floor(s5);
-        // Rows are whole hours: of the hour the window starts in, count only the part inside the window.
-        var part5 = 1 - (+s5 - h5) / 36e5;
-        var c5 = d3.sum(v.b.rows, function (r) { return +r.hour > h5 ? r.cost : +r.hour === h5 ? r.cost * part5 : 0; });
-        sub.appendChild(el('br'));
-        rich(sub, 'lim_5h', { cost: fmtCost(c5), per: fmtCost(c5 / pct) }, true);
-        if (f5 > 0.05 && f5 < 1) {
-          sub.appendChild(el('br'));
-          var e5 = pct / f5;
-          if (e5 >= 100) rich(sub, 'pace5_hit', { at: fDT(new Date(+s5 + (100 / e5) * 5 * 36e5)) }, true);
-          else rich(sub, 'pace5_end', { pct: fmtPct0(e5) }, true);
-        }
-      }
-      if (l.key === 'seven_day' && left > 0) {
-        var ws = new Date(+reset - 7 * 864e5), frac = (v.b.now - ws) / (7 * 864e5);
-        var wc = d3.sum(v.b.rows, function (r) { return r.hour >= ws ? r.cost : 0; });
-        sub.appendChild(el('br'));
-        if (pct > 0) rich(sub, 'lim_week', { cost: fmtCost(wc), per: fmtCost(wc / pct) }, true);
-        else rich(sub, 'lim_week_only', { cost: fmtCost(wc) }, true);
-        if (pct > 0 && frac > 0.02) {
-          sub.appendChild(el('br'));
-          var endPct = pct / frac;
-          if (endPct >= 100) rich(sub, 'pace_hit', { at: fDT(new Date(+ws + (100 / endPct) * 7 * 864e5)) }, true);
-          else rich(sub, 'pace_end', { pct: fmtPct0(endPct) }, true);
-        }
-        if (pct > 0 && pct < 100 && wc > 0) {
-          var room = (100 - pct) * wc / pct;
-          sub.appendChild(el('br'));
-          rich(sub, 'lim_left', { cost: '~' + fmtCost0(room), perday: fmtCost0(room / Math.max(1, left / 864e5)) }, true);
-        }
-      }
-      box.append(top, meter, sub);
-      e.appendChild(box);
-    });
-    if (v.b.limits.length) return;
-    if (v.b.app) { appLimits(e, v.b.app); return; }
-    e.textContent = t('lim_none');
-  });
-  // The percentages the Claude app recorded: no reset time is known, so no countdown, pace or room left.
-  function appLimits(e, app) {
-    ['five_hour', 'seven_day'].forEach(function (key) {
-      var pct = +app[key], box = el('div'), top = el('div', 'u-lim-top'), meter = el('div', 'u-meter'), fill = el('span');
-      top.append(el('span', null, t('lim_' + key)), el('b', null, fmtPct0(pct)));
-      fill.style.width = Math.min(100, pct) + '%';
-      fill.style.background = pct >= 90 ? 'var(--color-bad)' : pct >= 70 ? 'var(--color-warn)' : 'var(--color-ok)';
-      meter.appendChild(fill); box.append(top, meter); e.appendChild(box);
-    });
-    e.appendChild(el('div', 'u-lim-sub u-lim-note', t('lim_app_at', { time: fDT(new Date(app.t)) })));
-  }
 
   // This week's limit: the measured percentage now, spread back over the week by this Mac's cost,
   // plus every reading taken at a refresh, an even-pace line and a straight projection to the reset.
@@ -834,22 +1106,23 @@ dash.loader('status', { fn: function (a) {
     svg.append('g').selectAll('line').data(days).join('line').attr('x1', x).attr('x2', x).attr('y1', mt).attr('y2', H - mb).style('stroke', 'var(--cds-chart-grid)');
     var line = d3.line().x(function (d) { return x(d.t); }).y(function (d) { return y(d.p); });
     svg.append('path').attr('d', line([{ t: w.ws, p: 0 }, { t: w.reset, p: 100 }])).style('fill', 'none').style('stroke', 'var(--cds-chart-muted)').style('stroke-width', 1.5).style('stroke-dasharray', '4 4');
-    if (w.est.length) svg.append('path').attr('d', line(w.est)).style('fill', 'none').style('stroke', dash.colors[0]).style('stroke-width', 2);
-    if (w.endPct) svg.append('path').attr('d', line([{ t: w.now, p: w.pct }, { t: w.reset, p: Math.min(w.endPct, ymax) }])).style('fill', 'none').style('stroke', dash.colors[0]).style('stroke-width', 1.5).style('stroke-dasharray', '2 4');
+    if (w.est.length) svg.append('path').attr('d', line(w.est)).style('fill', 'none').style('stroke', 'var(--u-accent)').style('stroke-width', 2);
+    if (w.endPct) svg.append('path').attr('d', line([{ t: w.now, p: w.pct }, { t: w.reset, p: Math.min(w.endPct, ymax) }])).style('fill', 'none').style('stroke', 'var(--u-accent)').style('stroke-width', 1.5).style('stroke-dasharray', '2 4');
     svg.append('g').selectAll('circle').data(w.meas).join('circle').attr('cx', function (d) { return x(d.t); }).attr('cy', function (d) { return y(d.p); }).attr('r', 3.5).style('fill', 'var(--color-fg)');
     svg.append('text').attr('x', Math.min(x(w.now) + 8, W - mr - 30)).attr('y', y(w.pct) - 8).style('fill', 'var(--color-fg)').style('font-weight', 500).text(fmtPct0(w.pct));
     box.replaceChildren(svg.node());
   });
   R('weeklegend', function (e) {
     e.replaceChildren();
-    [['wk_est', dash.colors[0], 'line'], ['wk_meas', 'var(--color-fg)', 'dot'], ['wk_pace', 'var(--cds-chart-muted)', 'line']].forEach(function (x) {
+    [['wk_est', 'var(--u-accent)', 'line'], ['wk_meas', 'var(--color-fg)', 'dot'], ['wk_pace', 'var(--cds-chart-muted)', 'line']].forEach(function (x) {
       var d = el('span'), i = el('i', x[2]); i.style.background = x[1];
       d.append(i, document.createTextNode(t(x[0]))); e.appendChild(d);
     });
   });
 
-  // Plan usage over time as the Claude app recorded it: sparse readings, two lines, 0 to 100 %.
-  var APP_KEYS = [['five_hour', dash.colors[0]], ['seven_day', dash.colors[1]]];
+  // Plan usage over time as the Claude app recorded it: sparse readings, 0 to 100 %. The weekly line leads; the 5-hour
+  // readings are thin and small. Readings more than 12 hours apart are not joined.
+  var APP_SERIES = [['five_hour', 'var(--u-neutral)', 1.25, 2], ['seven_day', 'var(--u-accent)', 2.5, 3.2]], GAP = 12 * 36e5;
   dash.draw('appchart', function (box) {
     var sec = box.closest('section'), rows = dash.data('app_limit_history').data.map(function (r) { return { t: new Date(r.t), key: r.key, p: +r.pct }; });
     sec.hidden = !rows.length;
@@ -863,22 +1136,25 @@ dash.loader('status', { fn: function (a) {
     svg.append('g').selectAll('line').data(yt).join('line').attr('x1', ml).attr('x2', W - mr).attr('y1', y).attr('y2', y).style('stroke', 'var(--cds-chart-grid)');
     svg.append('g').selectAll('text').data(yt).join('text').attr('x', ml - 8).attr('y', y).attr('dy', '0.32em').attr('text-anchor', 'end').text(function (d) { return fmtPct0(d); });
     svg.append('g').selectAll('text').data(xt).join('text').attr('x', x).attr('y', H - 6).attr('text-anchor', 'middle').text(ext[1] - ext[0] < 2 * 864e5 ? d3.timeFormat('%H:%M') : fDay);
-    APP_KEYS.forEach(function (k) {
-      var pts = rows.filter(function (r) { return r.key === k[0]; });
-      svg.append('path').attr('d', d3.line().x(function (d) { return x(d.t); }).y(function (d) { return y(d.p); })(pts)).style('fill', 'none').style('stroke', k[1]).style('stroke-width', 2);
-      svg.append('g').selectAll('circle').data(pts).join('circle').attr('cx', function (d) { return x(d.t); }).attr('cy', function (d) { return y(d.p); }).attr('r', 3).style('fill', k[1])
-        .append('title').text(function (d) { return fDT(d.t) + ' · ' + fmtPct0(d.p); });
+    var ln = d3.line().x(function (d) { return x(d.t); }).y(function (d) { return y(d.p); });
+    APP_SERIES.forEach(function (k) {
+      var pts = rows.filter(function (r) { return r.key === k[0]; }).sort(function (a, b) { return a.t - b.t; }), segs = [];
+      pts.forEach(function (p, i) { if (i && p.t - pts[i - 1].t <= GAP) segs[segs.length - 1].push(p); else segs.push([p]); });
+      segs.forEach(function (s) { if (s.length > 1) svg.append('path').attr('d', ln(s)).style('fill', 'none').style('stroke', k[1]).style('stroke-width', k[2]); });
+      svg.append('g').selectAll('circle').data(pts).join('circle').attr('cx', function (d) { return x(d.t); }).attr('cy', function (d) { return y(d.p); }).attr('r', k[3]).style('fill', k[1])
+        .append('title').text(function (d) { return t('lim_' + k[0]) + ' · ' + fDT(d.t) + ' · ' + fmtPct0(d.p); });
     });
     box.replaceChildren(svg.node());
   });
   dash.draw('applegend', function (e) {
     e.replaceChildren();
-    APP_KEYS.forEach(function (k) {
-      var d = el('span'), i = el('i', 'line'); i.style.background = k[1];
+    APP_SERIES.slice().reverse().forEach(function (k) {
+      var d = el('span'), i = el('i', 'line'); i.style.background = k[1]; i.style.height = (k[2] + 0.5) + 'px';
       d.append(i, document.createTextNode(t('lim_' + k[0]))); e.appendChild(d);
     });
   });
 
+  // --- overview chart -----------------------------------------------------------------------
   function chartKeys(v) {
     var tot = d3.rollup(v.rows, function (rs) { return d3.sum(rs, mval); }, function (r) { return r.model; });
     var ranked = Array.from(tot.entries()).sort(function (a, b) { return b[1] - a[1]; }).map(function (x) { return x[0]; });
@@ -886,19 +1162,19 @@ dash.loader('status', { fn: function (a) {
     return { top: top, keys: ranked.length > 5 ? top.concat(['__other']) : top };
   }
   function keyName(k) { return k === '__other' ? t('other') : k; }
-  function keyColor(k, v) { return k === '__other' ? 'var(--cds-chart-muted)' : v.b.colorOf[k]; }
+  function keyStyle(k, v) { return k === '__other' ? { c: 'var(--cds-chart-muted)', o: 1 } : (v.b.colorOf[k] || { c: 'var(--cds-chart-muted)', o: 1 }); }
+  function swatch(k, v) { var i = el('i'), s = keyStyle(k, v); i.style.background = s.c; i.style.opacity = s.o; return i; }
   R('chartlegend', function (e, v) {
     e.replaceChildren();
     chartKeys(v).keys.forEach(function (k) {
-      var d = el('span'), i = el('i'); i.style.background = keyColor(k, v);
-      d.append(i, document.createTextNode(keyName(k))); e.appendChild(d);
+      var d = el('span'); d.append(swatch(k, v), document.createTextNode(keyName(k))); e.appendChild(d);
     });
   });
 
   dash.draw('chart', function (box) {
     var v = view();
     if (!v) { box.textContent = '—'; return; }
-    var W = Math.max(280, box.clientWidth), H = 260, mt = 10, mb = 26, mr = 8;
+    var W = Math.max(280, box.clientWidth), H = 200, mt = 10, mb = 26, mr = 8;
     var ck = chartKeys(v), keys = ck.keys, top = ck.top;
     var data = v.buckets.map(function (d) { var o = { d: d, k: v.bkey(d) }; keys.forEach(function (k) { o[k] = 0; }); return o; });
     var idx = new Map(data.map(function (o) { return [o.k, o]; }));
@@ -921,7 +1197,8 @@ dash.loader('status', { fn: function (a) {
     svg.append('g').selectAll('line').data(ticks).join('line').attr('x1', ml).attr('x2', W - mr).attr('y1', y).attr('y2', y).style('stroke', 'var(--cds-chart-grid)');
     svg.append('g').selectAll('text').data(ticks).join('text').attr('x', ml - 8).attr('y', y).attr('dy', '0.32em').attr('text-anchor', 'end').text(fTick);
     series.forEach(function (s) {
-      svg.append('g').style('fill', keyColor(s.key, v))
+      var st = keyStyle(s.key, v);
+      svg.append('g').style('fill', st.c).style('fill-opacity', st.o)
         .selectAll('rect').data(s).join('rect')
         .attr('x', function (d) { return x(d.data.k); }).attr('width', x.bandwidth())
         .attr('y', function (d) { return y(d[1]); }).attr('height', function (d) { return Math.max(0, y(d[0]) - y(d[1])); });
@@ -936,8 +1213,7 @@ dash.loader('status', { fn: function (a) {
         tip.replaceChildren(el('b', null, (v.hourly ? fDay(d.d) + ' ' + fHour(d.d) : fDay(d.d)) + ' · ' + fmtVal(d3.sum(keys, function (k) { return d[k]; }))));
         keys.forEach(function (k) {
           if (!d[k]) return;
-          var row = el('div'), i = el('i'); i.style.background = keyColor(k, v);
-          row.append(i, document.createTextNode(keyName(k) + ': ' + fmtVal(d[k]))); tip.appendChild(row);
+          var row = el('div'); row.append(swatch(k, v), document.createTextNode(keyName(k) + ': ' + fmtVal(d[k]))); tip.appendChild(row);
         });
         tip.hidden = false;
         var scale = box.clientWidth / W, cx = (x(d.k) + x.bandwidth() / 2) * scale, tw = tip.offsetWidth;
@@ -947,12 +1223,67 @@ dash.loader('status', { fn: function (a) {
       .on('pointerleave', function () { tip.hidden = true; });
   });
 
+  // --- tabs, controls -----------------------------------------------------------------------
+  function readTab() {
+    var h = location.hash.replace('#', '');
+    if (TABS.indexOf(h) >= 0) return h;
+    try { var s = localStorage.getItem('usage-claude-tab'); if (TABS.indexOf(s) >= 0) return s; } catch (e) {}
+    return 'overview';
+  }
+  // Switching only shows and hides; the charts that need a size are redrawn for the new tab.
+  function setTab(tab, focus) {
+    state.tab = tab;
+    document.querySelectorAll('[data-panel]').forEach(function (p) { p.hidden = p.getAttribute('data-panel') !== tab; });
+    document.querySelectorAll('[data-tab]').forEach(function (b) {
+      var on = b.getAttribute('data-tab') === tab;
+      b.setAttribute('aria-selected', String(on)); b.tabIndex = on ? 0 : -1;
+      if (on && focus) b.focus();
+    });
+    try { localStorage.setItem('usage-claude-tab', tab); } catch (e) {}
+    if (location.hash !== '#' + tab) { try { history.replaceState(null, '', '#' + tab); } catch (e) { location.hash = tab; } }
+    drawSized();
+  }
+  function goTab(tab, anchor) {
+    setTab(tab);
+    window.scrollTo(0, 0);
+    if (anchor) setTimeout(function () { var a = document.getElementById(anchor); if (a) a.scrollIntoView({ block: 'start' }); }, 0);
+  }
+  document.querySelectorAll('[data-tab]').forEach(function (b) {
+    b.addEventListener('click', function () { setTab(b.getAttribute('data-tab')); window.scrollTo(0, 0); });
+    b.addEventListener('keydown', function (ev) {
+      var d = ev.key === 'ArrowRight' ? 1 : ev.key === 'ArrowLeft' ? -1 : 0;
+      if (!d) return;
+      ev.preventDefault();
+      setTab(TABS[(TABS.indexOf(state.tab) + d + TABS.length) % TABS.length], true);
+    });
+  });
+  window.addEventListener('hashchange', function () { var h = location.hash.replace('#', ''); if (TABS.indexOf(h) >= 0 && h !== state.tab) setTab(h); });
+  window.addEventListener('resize', function () { drawSized(); });
+
+  // The "more" menu: a button that opens a small panel; it closes on a click outside, on Escape and when focus leaves it.
+  var more = document.getElementById('u-more'), moreBtn = document.getElementById('u-more-btn'), menu = document.getElementById('u-menu');
+  function setMenu(open, focus) {
+    menu.hidden = !open; moreBtn.setAttribute('aria-expanded', String(open));
+    if (!open && focus) moreBtn.focus();
+  }
+  moreBtn.addEventListener('click', function () { setMenu(menu.hidden); });
+  menu.addEventListener('click', function (ev) { if (ev.target.closest('[data-export], #l-setup-btn')) setMenu(false); });
+  document.addEventListener('click', function (ev) { if (!menu.hidden && !more.contains(ev.target)) setMenu(false); });
+  more.addEventListener('keydown', function (ev) { if (ev.key === 'Escape' && !menu.hidden) { ev.stopPropagation(); setMenu(false, true); } });
+  more.addEventListener('focusout', function (ev) { if (!menu.hidden && ev.relatedTarget && !more.contains(ev.relatedTarget)) setMenu(false); });
+
   function sync() {
     document.querySelectorAll('[data-range]').forEach(function (b) { var on = b.getAttribute('data-range') === state.range; b.classList.toggle('on', on); b.setAttribute('aria-pressed', String(on)); });
     document.querySelectorAll('[data-metric]').forEach(function (b) { var on = b.getAttribute('data-metric') === state.metric; b.classList.toggle('on', on); b.setAttribute('aria-pressed', String(on)); });
+    document.querySelectorAll('[data-dim]').forEach(function (b) {
+      var d = b.getAttribute('data-dim'), on = d === state.dim;
+      b.classList.toggle('on', on); b.setAttribute('aria-pressed', String(on)); b.classList.toggle('has-flt', state.filter[d] != null);
+    });
   }
   document.querySelectorAll('[data-range]').forEach(function (b) { b.addEventListener('click', function () { state.range = b.getAttribute('data-range'); sync(); redrawAll(); }); });
   document.querySelectorAll('[data-metric]').forEach(function (b) { b.addEventListener('click', function () { state.metric = b.getAttribute('data-metric'); sync(); redrawAll(); }); });
+  document.querySelectorAll('[data-dim]').forEach(function (b) { b.addEventListener('click', function () { state.dim = b.getAttribute('data-dim'); sync(); redrawAll(); }); });
   sync();
+  setTab(readTab());
 })();
 </script>

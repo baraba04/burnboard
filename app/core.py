@@ -16,10 +16,12 @@ import os
 import re
 import shutil
 import signal
+import ssl
 import stat
 import subprocess
 import sys
 import time
+import urllib.request
 from datetime import datetime, timezone
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -27,7 +29,9 @@ sys.path.insert(0, HERE)
 HOME = os.path.expanduser("~")
 HISTORY_DAYS = 15  # how much limit history the page receives
 PLAN_HISTORY_MAX = 1 << 20  # bytes; a larger plan usage history file is not read
-CONSENT_VERSION = 3  # 2: Cowork sessions of the Claude desktop app are read too; 3: and its plan usage history file. Raise when the app starts doing something the user has not agreed to
+RELEASE_URL = "https://raw.githubusercontent.com/baraba04/burnboard/main/release.json"
+RELEASE_MAX_BYTES = 64 * 1024
+CONSENT_VERSION = 4  # 2: Cowork sessions of the Claude desktop app are read too; 3: and its plan usage history file; 4: a request for the release file at every refresh and the Update button's download. Raise when the app starts doing something the user has not agreed to
 DEFAULT_ID = "default"
 ID_RE = re.compile(r"^[0-9a-f]{8}$")
 
@@ -104,6 +108,49 @@ def consent(cfg):
     v = v if type(v) is int else None
     lim = lim if isinstance(lim, bool) else None
     return {"given": v is not None and v >= CONSENT_VERSION and lim is not None, "version": v, "limits_call": lim}
+
+
+# --- update check -----------------------------------------------------------------------
+
+def version_tuple(v):
+    """(major, minor, patch) of "1.3" or "1.3.1" (digits only, 20 characters at most), else None."""
+    if not isinstance(v, str) or len(v) > 20 or not re.fullmatch(r"[0-9]+(\.[0-9]+){1,2}", v, re.ASCII):
+        return None
+    t = tuple(int(x) for x in v.split("."))
+    return t + (0,) * (3 - len(t))
+
+
+def fetch_release(url=RELEASE_URL):
+    """The parsed release.json; raises on any failure. Same care as the price list fetch (pricing.fetch): one
+    host, redirects only within it, a time and a size limit, certificates verified. A plain GET with one fixed
+    User-Agent, the same one the app's own update download sends (nothing about this Mac or this build)."""
+    import pricing
+    ctx = ssl.create_default_context()
+    if not ctx.get_ca_certs() and os.path.exists(pricing.SYSTEM_CA):
+        ctx.load_verify_locations(pricing.SYSTEM_CA)  # a python.org build has no trust store of its own; verification stays on
+    opener = urllib.request.build_opener(urllib.request.HTTPSHandler(context=ctx), pricing._SameHost())
+    req = urllib.request.Request(url, headers={"User-Agent": "Burnboard-update"})
+    with opener.open(req, timeout=pricing.TIMEOUT_S) as r:
+        body = r.read(RELEASE_MAX_BYTES + 1)
+    if len(body) > RELEASE_MAX_BYTES:
+        raise ValueError("release file too large")
+    return json.loads(body)
+
+
+def update_check():
+    """{"version": "x.y"} when the published release is newer than the running app (BURNBOARD_VERSION, set by the
+    app; the development server has none, so no request), else None. Silent on any failure. Only the version
+    leaves this function: the page never sees anything else from the file, and the app fetches and checks the
+    file itself when the user clicks Update."""
+    running = version_tuple(os.environ.get("BURNBOARD_VERSION"))
+    if running is None or os.environ.get("USAGE_CLAUDE_OFFLINE") == "1":
+        return None
+    try:
+        version = fetch_release().get("version")
+    except Exception:  # network, certificate, timeout, size, bad JSON, not an object: no update shown
+        return None
+    latest = version_tuple(version)
+    return {"version": version} if latest and latest > running else None
 
 
 def default_profile():
@@ -358,9 +405,10 @@ def fresh(profile, limits_call=True):
     t0 = time.time()
     lim = start_limits(profile) if limits_call else None
     notes = []
-    prices, offline = pricing.load(cache_root())  # the one request besides the limits call; shared by all profiles
+    prices, offline = pricing.load(cache_root())  # a request besides the limits call; shared by all profiles
     if offline:
         notes.append({"code": "prices_offline"})
+    update = update_check()  # the other request: the release file
     if lim:
         limits = read_limits(lim)
         if limits.get("error"):
@@ -390,6 +438,8 @@ def fresh(profile, limits_call=True):
     if chk["approx_pricing"]:
         notes.append({"code": "approx_pricing", "count": chk["approx_pricing"], "detail": str(chk["approx_pricing"])})
     out["meta"][0]["notes"] = notes
+    if update:
+        out["meta"][0]["update"] = update
     out["meta"][0]["took_s"] = round(time.time() - t0, 1)
     body = json.dumps(out, separators=(",", ":"), ensure_ascii=False).encode()
     last = last_path(profile)

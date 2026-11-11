@@ -26,17 +26,15 @@
   }
 }
 body { margin: 0; padding: 0 max(16px, env(safe-area-inset-right, 0px)) 48px max(16px, env(safe-area-inset-left, 0px)); background: var(--color-bg); color: var(--color-fg); font-family: var(--font-anthropic-sans); font-size: 14px; }
-.l-bar { position: sticky; top: 0; z-index: 5; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; max-width: 1100px; margin: 0 auto 24px; padding: 12px 0; background: var(--color-bg); border-bottom: 1px solid var(--color-border-line); }
+.l-bar { display: none; position: sticky; top: 0; z-index: 5; align-items: center; gap: 12px; flex-wrap: wrap; max-width: 1100px; margin: 0 auto 24px; padding: 12px 0; background: var(--color-bg); border-bottom: 1px solid var(--color-border-line); }
+.setup-on .l-bar { display: flex; }
 .l-btn { font: inherit; font-weight: 500; color: var(--color-bg); background: var(--color-fg); border: 0; border-radius: 8px; padding: 8px 16px; cursor: pointer; }
 .l-btn:disabled { opacity: .5; cursor: progress; }
 .l-btn:focus-visible { outline: 2px solid var(--c2); outline-offset: 2px; }
-.l-status { color: var(--color-fg-muted); font-size: 13px; flex: 1 1 200px; min-width: 0; }
-.l-status.bad { color: var(--color-bad); }
 .l-lang { display: inline-flex; padding: 3px; gap: 2px; border: 1px solid var(--color-border-line); border-radius: 8px; background: var(--color-panel); margin-left: auto; }
 .l-lang button { font: inherit; font-size: 12px; font-weight: 500; letter-spacing: .04em; color: var(--color-fg-muted); background: transparent; border: 0; border-radius: 6px; padding: 5px 10px; cursor: pointer; }
 .l-lang button.on { background: var(--color-bg); color: var(--color-fg); box-shadow: 0 0 0 1px var(--color-border-line); }
 .l-lang button:focus-visible { outline: 2px solid var(--color-fg); outline-offset: 1px; }
-.l-notes { max-width: 1100px; margin: 0 auto 16px; color: var(--color-warn); font-size: 13px; }
 .l-setup { display: none; max-width: 720px; margin: 0 auto; line-height: 1.5; }
 .l-setup h2 { font-family: var(--font-anthropic-serif); font-size: var(--cds-font-size-title); font-weight: 500; margin: 0 0 8px; }
 .l-setup h3 { font-size: var(--cds-font-size-heading); font-weight: 500; margin: 24px 0 8px; }
@@ -60,15 +58,14 @@ body { margin: 0; padding: 0 max(16px, env(safe-area-inset-right, 0px)) 48px max
 .l-welcome .l-row { justify-content: center; flex-direction: column; align-items: center; gap: 12px; }
 .l-welcome .l-big { font-size: 1.15em; padding: 14px 34px; }
 .setup-on .l-setup { display: block; }
-.setup-on #dash-root, .setup-on #l-notes, .setup-on .l-foot, .setup-on #l-refresh, .setup-on #l-status, .setup-on #l-setup-btn { display: none; }
-.l-foot { max-width: 1100px; margin: 32px auto 0; color: var(--color-fg-muted); font-size: 12px; line-height: 1.5; }
+.setup-on #dash-root { display: none; }
 </style>
 <script src="/d3.min.js" integrity="sha512-vc58qvvBdrDR4etbxMdlTt4GBQk1qjvyORR2nrsPsFPyrs+/u5c3+1Ct6upOgdZoIl7eq6k3a1UPDSNAQi/32A==" crossorigin="anonymous"></script>
 <script>
 var I18N = {
   en: {
-    btn_refresh: 'Refresh', st_loading: 'Loading …', st_last: 'Showing the last snapshot. Click Refresh for fresh data.',
-    st_reading: 'Reading logs and limits … {s} s', st_done: 'Refreshed at {time} (in {s} s)', st_fail: 'Refresh failed: {msg}',
+    btn_refresh: 'Refresh', st_loading: 'Loading …',
+    st_reading: 'Reading… {s} s', st_updated: 'Updated {time}', st_fail: 'Refresh failed: {msg}',
     note_prices_offline: 'The price list was unreachable, so the saved one was used.',
     note_limits_failed: 'Plan limits were not read: {why}.', why_timeout: 'the limits call did not answer in 60 s', why_nodata: 'the response had no limit data', why_no_claude: 'Claude Code is not on this Mac',
     note_unpriced: 'No price for: {detail}.',
@@ -80,7 +77,7 @@ var I18N = {
     welcome_ready_both: 'Everything is ready. Found {n} log files of your Claude usage and your plan usage history from the Claude app on this Mac.',
     welcome_ready_plan: 'Everything is ready. Found your plan usage history from the Claude app on this Mac.',
     welcome_reads: 'Burnboard reads your Claude usage records on this Mac and shows what they would cost.',
-    welcome_local: 'Nothing from your logs is sent anywhere. The only download is a public price list.',
+    welcome_local: 'Nothing from your logs is sent anywhere. The app only downloads a public price list and checks for a new version.',
     welcome_limits: 'Also show my plan limits (one small call on my own Claude subscription per refresh)',
     btn_details: 'Show all details', btn_agree_short: 'Agree and open',
     setup_title: 'Set up Burnboard', setup_intro: 'Read what the app finds and what it does, then agree to open the dashboard.',
@@ -102,6 +99,7 @@ var I18N = {
     src_plan_history: 'Plan usage history kept by the Claude desktop app (readings: {n}).',
     src_claude_code: 'Claude Code logs (files: {n}).', src_claude_code_xdg: 'Claude Code logs in ~/.config/claude (files: {n}).', src_cowork: 'Cowork sessions of the Claude desktop app (files: {n}).',
     does_prices: 'Downloads a public price list (from raw.githubusercontent.com) during a refresh and works out the costs itself.',
+    does_update: 'During a refresh it also reads one small public file on GitHub that names the newest Burnboard version. Only when you click Update now: it downloads that version from GitHub, checks its signature and replaces itself.',
     does_limits: 'Makes one small call on your own Claude subscription at each refresh, to read the plan limits. Your own Claude Code makes it, and it may include your own Claude Code instruction files, as it does for any session. No log content or usage data is in it.',
     does_signin: 'Only when you click the sign-in button: Claude Code itself signs you in on Anthropic\'s own page. Burnboard does not take part in it.',
     limits_switch: 'Make that call and show the plan limits', limits_switch_hint: 'Switch it off and the app makes no call on your subscription; the limit percentages are then not shown.',
@@ -109,59 +107,71 @@ var I18N = {
     never_secrets: 'No reading or storing of passwords or tokens.', never_telemetry: 'No telemetry.', never_bg: 'Nothing runs between your clicks.',
     setup_error: 'That did not work: {msg}', err_bad_profile_dir: 'That folder is not a Claude folder: it has no "projects" folder inside.', err_profile_exists: 'That folder is already in the list.',
     err_no_python: 'Python 3 was not found.', err_failed: 'That could not be started.',
-    foot: 'Source: the Claude usage records on this Mac (Claude Code logs, Cowork sessions, the plan usage history of the Claude app), priced with a public price list. Refresh reads them, downloads that price list from raw.githubusercontent.com and, when Claude Code is there and the limits switch is on, makes one small call on the Claude subscription to get the limit percentages. Nothing else is sent anywhere, and nothing runs between clicks. Sessions from claude.ai, the phone and other computers are not included, so the limit percentages cover more than the costs shown here. Cost is an estimate at API prices; a Claude subscription does not bill it. Cache savings is how much more the cached tokens would cost at the full input price. Hours and days are in local time.',
-    aria_period: 'Period', aria_metric: 'Measure', aria_lang: 'Language',
-    lead: 'Over {period}, {tokens} tokens were processed, which would cost {cost} at API prices. The costliest model was {model}, the costliest project {project}.',
-    period_24h: 'the last 24 hours', period_range: 'the period {from} to {to}',
-    snap: 'Snapshot from this Mac: {time}', ago: '({d} ago)',
-    r_24h: '24 h', r_7: '7 days', r_30: '30 days', r_all: 'All', m_cost: 'Cost', m_tokens: 'Tokens',
-    h_limits: 'Plan limits', h_limits_hint: 'as of the snapshot, regardless of the selected period',
+    aria_period: 'Period', aria_metric: 'Measure', aria_lang: 'Language', aria_tabs: 'Sections', aria_dim: 'Break down by',
+    tab_overview: 'Overview', tab_breakdown: 'Breakdown', tab_sessions: 'Sessions', tab_limits: 'Limits', btn_more: 'More',
+    r_today: 'Today', r_7: '7 days', r_30: '30 days', r_all: 'All', hint_local: 'Hours and days are in local time.', m_cost: 'Cost', m_tokens: 'Tokens',
+    flt_by: 'Filtered by', flt_remove: 'Remove filter {what}',
+    chip_limits_off: 'Plan limits off', chip_prices_offline: 'Saved price list',
+    update_available: 'Burnboard {v} is available', btn_update: 'Update now', update_wait: 'Downloading and checking the update…', update_restarting: 'Update installed. Burnboard is restarting…',
+    err_update_no_network: 'The update could not be downloaded. Check your internet connection and try again.',
+    err_update_bad_signature: 'The update was refused because it could not be verified. Nothing was changed.',
+    err_update_bad_file: 'The downloaded update was damaged or incomplete, so it was not used.',
+    err_update_install_failed: 'The update could not be installed.', err_update_none: 'There is no newer version to install.',
+    h_limits: 'Plan limits', lim_details: 'Details', lim_follow: 'This tab does not follow the period. The percentages count all your Claude use on this account; the costs here count only this Mac.',
     lim_five_hour: '5-hour limit', lim_seven_day: 'Week, all models',
     lim_reset: 'Resets in {d} ({at})', lim_passed: 'Reset since the snapshot. Refresh for the current state.',
     lim_week: 'This week on this Mac: {cost}, which is {per} per 1%', lim_week_only: 'This week on this Mac: {cost}',
-    lim_pace: 'At this pace by reset: {pct}', lim_none: 'Plan limits were not read for this snapshot.',
+    lim_none: 'Plan limits were not read for this snapshot.',
     lim_app_at: 'As recorded by the Claude app at {time}', h_app_hist: 'Plan usage over time (from the Claude app)',
     no_usage: 'No Claude Code or Cowork usage was found on this Mac. Burnboard shows whatever is there; chats in the Claude app leave no token records on the Mac.',
-    big_cost: 'API-equivalent cost', big_tokens: 'tokens processed', span_24h: ', last 24 hours', span_days: ', {n} days',
-    delta: 'vs the previous {span} ({prev})', span2_24h: '24 hours', span2_days: '{n} days',
+    big_cost: 'Cost', big_tokens: 'Tokens processed', span_today: ', today', span_days: ', {n} days', big_caption: 'API-equivalent, not billed',
+    delta: 'vs the previous {span} ({prev})', span2_days: '{n} days', delta_today: 'vs yesterday at the same time ({prev})',
     delta_nodata: 'Not enough data to compare with the previous period.', delta_zero: 'No usage in the previous period.',
     sessions: 'Sessions', calls: 'Model calls', avg_hour: 'Average per hour', avg_day: 'Average per day', peak_hour: 'Busiest hour', peak_day: 'Busiest day',
     chart_title: '{by}, {what} by model', by_hour: 'By hour', by_day: 'By day', what_cost: 'cost', what_tokens: 'tokens',
-    h_totals: 'Totals', tot_all: 'Tokens processed', tot_read: 'Cache reads', tot_unc: 'Uncached input', tot_out: 'Output', tot_cost: 'Cost (API equiv.)', tot_saved: 'Cache savings',
-    h_types: 'Tokens by type', ty_in: 'Input', ty_read: 'Cache read', ty_write: 'Cache write', ty_out: 'Output',
-    h_models: 'By model', h_projects: 'By project', th_model: 'Model', th_project: 'Project', th_cost: 'Cost', th_share: 'Cost share', th_tokens: 'Tokens',
-    other: 'other', other_n: 'other ({n})',
-    h_sub: 'Main session and subagents', h_sub_hint: 'by cost', sub_main: 'Main session', sub_agents: 'Subagents',
-    h_sessions: 'Costliest sessions in the period', h_sessions_hint: 'including subagents', th_session: 'Session', th_last: 'Last activity',
+    hl_errors: 'API errors: {n}', hl_comp: 'Compactions: {n}', hl_go: 'Show in Sessions',
+    hl_pricing_ok: 'Pricing: all calls priced', hl_pricing_unpriced: 'Pricing: some models have no price', hl_pricing_approx: 'Pricing: some calls are approximate',
+    top_projects: 'Top projects', top_models: 'Top models', top_session: 'Biggest session', top_open: 'Open in Sessions',
+    ov_source: 'Source: the Claude usage records on this Mac (Claude Code logs, Cowork sessions, plan usage history of the Claude app), priced with a public price list.',
+    h_breakdown: 'Breakdown', bk_follow: 'Follows the period. Filters on the other dimensions narrow it.',
+    bk_hint: 'Click a row to filter the whole page by it; click it again to remove the filter.',
+    h_tokens: 'Tokens', tot_all: 'Tokens processed', tot_read: 'Cache reads', tot_unc: 'Uncached input', tot_out: 'Output', tot_saved: 'Cache savings',
+    tot_saved_note: 'How much more the cached tokens would cost at the full input price.',
+    ty_in: 'Input', ty_read: 'Cache read', ty_write: 'Cache write', ty_out: 'Output',
+    th_model: 'Model', th_project: 'Project', th_cost: 'Cost', th_share: 'Share', th_tokens: 'Tokens',
+    other: 'other', other_n: 'other ({n})', sub_main: 'Main session', sub_agents: 'Subagents',
+    h_sessions: 'Sessions', h_sessions_hint: 'The biggest of the period by the chosen measure, subagents included. Click a row to open its context chart.',
+    th_session: 'Session', th_last: 'Last activity', row_open: 'Open the context chart',
     untitled: 'Untitled', calls_total: '{n} calls in the whole session',
-    h_agents: 'By agent', h_efforts: 'By effort', th_agent: 'Agent', th_effort: 'Effort',
+    th_agent: 'Agent', th_effort: 'Effort',
     agent_main: 'main session', agent_unknown: 'subagent (type not recorded)', effort_none: 'not recorded',
     flt_project: 'Project', flt_model: 'Model', flt_agent: 'Agent', flt_effort: 'Effort', flt_clear: 'Clear filters',
-    flt_hint: 'Click a row in any breakdown table to filter the whole page.', sess_nofilter: 'Sessions are filtered by project only.',
+    sess_nofilter: 'Sessions, compactions and API errors follow the project filter only; calls ignore the skill / MCP filter.',
     h_week: 'This week against the weekly limit', wk_est: 'estimated from usage on this Mac', wk_meas: 'measured at a refresh', wk_pace: 'even pace',
     wk_none: 'Not enough data for this week yet.',
     pace_hit: 'At this pace the weekly limit is reached on {at}', pace_end: 'At this pace the week ends at about {pct}',
     btn_csv: 'Export CSV',
     lim_5h: 'This window on this Mac: {cost}, which is {per} per 1%', pace5_hit: 'At this pace the 5-hour limit is reached at {at}', pace5_end: 'At this pace the window ends at about {pct}',
     lim_left: 'Room left this week at this rate: {cost}, or {perday} per day until the reset',
-    h_qweeks: 'Quota weeks', h_qweeks_hint: 'reset to reset, counted back from the current reset time; follows the filters, not the period',
+    h_qweeks: 'Previous weeks', h_qweeks_hint: 'reset to reset, counted back from the current reset time; follows the filters, not the period',
     th_week: 'Week', th_limit_used: 'Weekly limit used', qw_current: 'current', qw_sofar: 'so far', qw_lastseen: 'at the last refresh that week',
     qw_none: 'The weekly limit was not read, so the week boundaries are unknown.',
-    h_via: 'By skill and MCP server', h_via_hint: 'calls that ran under a skill or used an MCP server; share of all cost',
-    th_via: 'Skill or MCP server', via_none: 'no skill or MCP server', via_skill: 'Skill', flt_via: 'Skill / MCP', none_period: 'Nothing in this period.',
-    h_errors: 'API errors', h_errors_hint: 'in the period; follows the project filter only', th_kind: 'Kind', th_count: 'Count', th_lastseen: 'Last seen',
+    h_via_hint: 'Calls that ran under a skill or used an MCP server; the share is of all cost.',
+    th_via: 'Skill / MCP server', via_none: 'no skill or MCP server', via_skill: 'Skill', flt_via: 'Skill / MCP', none_period: 'Nothing in this period.',
+    h_problems: 'Problems', h_problems_hint: 'Compactions and API errors in the period.',
+    h_errors: 'API errors', th_kind: 'Kind', th_count: 'Count', th_lastseen: 'Last seen',
     err_retry: 'Retried', err_final: 'Failed', err_none: 'No API errors in this period.',
-    h_heat: 'When usage happens', h_heat_hint: 'weekday by hour, in the selected period',
-    ctx_hint: 'Click a session above to see how its context grew.', ctx_title: 'Context size per call: {title}',
+    h_heat: 'When usage happens', h_heat_hint: 'weekday by hour, in the selected period', heat_low: 'Low', heat_high: 'High',
+    ctx_title: 'Context size per call: {title}',
     ctx_none: 'No main-thread calls are recorded for this session.',
     ctx_note: '{n} main-thread calls, largest context {peak}, compacted {c} times (dashed lines).',
     comp_line: 'Compactions in the period: {n} ({auto} automatic, {manual} manual); typical context before a compaction: {pre}.', comp_none: 'No compactions in this period.',
-    h_calls: 'Costliest single calls', h_calls_hint: 'from the 20 costliest calls of each day', th_time: 'Time', th_context: 'Context', th_output: 'Output',
-    calls_novia: 'The skill / MCP filter does not apply to this list.', calls_filtered: 'With a filter on, a call outside its day\'s 20 costliest is not listed.'
+    h_calls: 'Calls', h_calls_hint: 'The costliest single calls. Only each day\'s 20 costliest are kept, so with a filter on, cheaper calls may be missing.',
+    th_time: 'Time', th_context: 'Context', th_output: 'Output'
   },
   sl: {
-    btn_refresh: 'Osveži', st_loading: 'Nalagam …', st_last: 'Prikazan je zadnji posnetek. Klikni Osveži za sveže podatke.',
-    st_reading: 'Berem dnevnike in omejitve … {s} s', st_done: 'Osveženo ob {time} (v {s} s)', st_fail: 'Osvežitev ni uspela: {msg}',
+    btn_refresh: 'Osveži', st_loading: 'Nalagam …',
+    st_reading: 'Berem … {s} s', st_updated: 'Osveženo {time}', st_fail: 'Osvežitev ni uspela: {msg}',
     note_prices_offline: 'Cenik ni bil dosegljiv, uporabljen je shranjeni.',
     note_limits_failed: 'Omejitve niso bile prebrane: {why}.', why_timeout: 'klic za omejitve ni odgovoril v 60 s', why_nodata: 'odgovor ni vseboval omejitev', why_no_claude: 'Claude Code ni na tem Macu',
     note_unpriced: 'Brez cene: {detail}.',
@@ -173,7 +183,7 @@ var I18N = {
     welcome_ready_both: 'Vse je pripravljeno. Na tem Macu je najdenih {n} dnevnikov tvoje uporabe Claude in zgodovina porabe tvoje naročnine iz aplikacije Claude.',
     welcome_ready_plan: 'Vse je pripravljeno. Na tem Macu je najdena zgodovina porabe tvoje naročnine iz aplikacije Claude.',
     welcome_reads: 'Burnboard bere zapise o tvoji uporabi Claude na tem Macu in pokaže, koliko bi stali.',
-    welcome_local: 'Nič iz tvojih dnevnikov se nikamor ne pošilja. Edini prenos je javni cenik.',
+    welcome_local: 'Nič iz tvojih dnevnikov se nikamor ne pošilja. Aplikacija samo prenese javni cenik in preveri, ali je na voljo nova različica.',
     welcome_limits: 'Pokaži tudi omejitve moje naročnine (en majhen klic prek moje naročnine Claude ob vsaki osvežitvi)',
     btn_details: 'Pokaži vse podrobnosti', btn_agree_short: 'Soglašam in odpri',
     setup_title: 'Nastavitev Burnboard', setup_intro: 'Preberi, kaj aplikacija najde in kaj dela, nato potrdi, da se odpre nadzorna plošča.',
@@ -195,6 +205,7 @@ var I18N = {
     src_plan_history: 'Zgodovina porabe naročnine, ki jo hrani namizna aplikacija Claude (odčitkov: {n}).',
     src_claude_code: 'Dnevniki Claude Code (datotek: {n}).', src_claude_code_xdg: 'Dnevniki Claude Code v ~/.config/claude (datotek: {n}).', src_cowork: 'Seje Cowork namizne aplikacije Claude (datotek: {n}).',
     does_prices: 'Ob osvežitvi prenese javni cenik (z raw.githubusercontent.com) in stroške izračuna sam.',
+    does_update: 'Ob osvežitvi prebere tudi eno majhno javno datoteko na GitHubu, ki pove najnovejšo različico Burnboard. Samo ko klikneš Posodobi zdaj: prenese to različico z GitHuba, preveri njen podpis in se zamenja.',
     does_limits: 'Ob vsaki osvežitvi naredi en majhen klic prek tvoje lastne naročnine Claude, da prebere omejitve. Klic opravi tvoj lastni Claude Code in lahko vključi tvoje lastne datoteke z navodili za Claude Code, kot pri vsaki seji. V klicu ni vsebine dnevnikov ali podatkov o porabi.',
     does_signin: 'Samo ko klikneš gumb za prijavo: Claude Code te prijavi sam, na Anthropicovi lastni strani. Burnboard pri tem ne sodeluje.',
     limits_switch: 'Naredi ta klic in pokaži omejitve naročnine', limits_switch_hint: 'Če izklopiš, aplikacija ne naredi nobenega klica prek tvoje naročnine; odstotki omejitev se potem ne prikažejo.',
@@ -202,55 +213,67 @@ var I18N = {
     never_secrets: 'Ne bere in ne shranjuje gesel ali žetonov.', never_telemetry: 'Ne pošilja telemetrije.', never_bg: 'Med kliki ne teče nič.',
     setup_error: 'Ni uspelo: {msg}', err_bad_profile_dir: 'Ta mapa ni mapa Claude: v njej ni mape "projects".', err_profile_exists: 'Ta mapa je že na seznamu.',
     err_no_python: 'Python 3 ni najden.', err_failed: 'Tega ni bilo mogoče zagnati.',
-    foot: 'Vir: zapisi o uporabi Claude na tem Macu (dnevniki Claude Code, seje Cowork, zgodovina porabe naročnine iz aplikacije Claude), ocenjeni po javnem ceniku. Osveži jih prebere, prenese ta cenik z raw.githubusercontent.com in, če je Claude Code nameščen in je stikalo za omejitve vklopljeno, naredi en majhen klic prek naročnine Claude, da dobi odstotke omejitev. Nič drugega se nikamor ne pošilja, med kliki pa ne teče nič. Seje iz claude.ai, telefona in drugih računalnikov niso zajete, zato odstotki omejitev pokrivajo več kot stroški tukaj. Strošek je ocena po API cenah, naročnina Claude ga ne zaračuna. Prihranek predpomnilnika pove, koliko več bi stali prebrani žetoni po polni vhodni ceni. Ure in dnevi so v lokalnem času.',
-    aria_period: 'Obdobje', aria_metric: 'Mera', aria_lang: 'Jezik',
-    lead: 'V obdobju {period} je bilo obdelanih {tokens} žetonov, kar bi po API cenah stalo {cost}. Največ stroška je odnesel model {model}, največ projekt {project}.',
-    period_24h: 'zadnjih 24 ur', period_range: '{from} do {to}',
-    snap: 'Posnetek z Maca: {time}', ago: '(pred {d})',
-    r_24h: '24 ur', r_7: '7 dni', r_30: '30 dni', r_all: 'Vse', m_cost: 'Strošek', m_tokens: 'Žetoni',
-    h_limits: 'Omejitve naročnine', h_limits_hint: 'stanje ob posnetku, ne glede na izbrano obdobje',
+    aria_period: 'Obdobje', aria_metric: 'Mera', aria_lang: 'Jezik', aria_tabs: 'Razdelki', aria_dim: 'Razčleni po',
+    tab_overview: 'Pregled', tab_breakdown: 'Razčlenitev', tab_sessions: 'Seje', tab_limits: 'Omejitve', btn_more: 'Več',
+    r_today: 'Danes', r_7: '7 dni', r_30: '30 dni', r_all: 'Vse', hint_local: 'Ure in dnevi so v lokalnem času.', m_cost: 'Strošek', m_tokens: 'Žetoni',
+    flt_by: 'Filtrirano po', flt_remove: 'Odstrani filter {what}',
+    chip_limits_off: 'Omejitve izklopljene', chip_prices_offline: 'Shranjeni cenik',
+    update_available: 'Na voljo je Burnboard {v}', btn_update: 'Posodobi zdaj', update_wait: 'Prenašam in preverjam posodobitev …', update_restarting: 'Posodobitev je nameščena. Burnboard se znova zaganja …',
+    err_update_no_network: 'Posodobitve ni bilo mogoče prenesti. Preveri internetno povezavo in poskusi znova.',
+    err_update_bad_signature: 'Posodobitev je bila zavrnjena, ker je ni bilo mogoče preveriti. Nič ni spremenjeno.',
+    err_update_bad_file: 'Prenesena posodobitev je bila poškodovana ali nepopolna, zato ni bila uporabljena.',
+    err_update_install_failed: 'Posodobitve ni bilo mogoče namestiti.', err_update_none: 'Novejše različice za namestitev ni.',
+    h_limits: 'Omejitve naročnine', lim_details: 'Podrobnosti', lim_follow: 'Ta zavihek ne sledi obdobju. Odstotki štejejo vso tvojo uporabo Claude na tem računu; stroški tukaj samo ta Mac.',
     lim_five_hour: '5-urna omejitev', lim_seven_day: 'Teden, vsi modeli',
     lim_reset: 'Ponastavitev čez {d} ({at})', lim_passed: 'Ponastavljeno po posnetku. Osveži za novo stanje.',
     lim_week: 'Ta teden na tem Macu: {cost}, to je {per} na 1 %', lim_week_only: 'Ta teden na tem Macu: {cost}',
-    lim_pace: 'Ob tem tempu do ponastavitve: {pct}', lim_none: 'Omejitve ob posnetku niso bile prebrane.',
+    lim_none: 'Omejitve ob posnetku niso bile prebrane.',
     lim_app_at: 'Kot jih je zabeležila aplikacija Claude ob {time}', h_app_hist: 'Poraba naročnine skozi čas (iz aplikacije Claude)',
     no_usage: 'Na tem Macu ni najdene porabe Claude Code ali Cowork. Burnboard prikaže, kar je tam; klepeti v aplikaciji Claude na Macu ne pustijo zapisov o žetonih.',
-    big_cost: 'ekvivalent API stroška', big_tokens: 'obdelanih žetonov', span_24h: ', zadnjih 24 ur', span_days: ', {n} dni',
-    delta: 'glede na prejšnjih {span} ({prev})', span2_24h: '24 ur', span2_days: '{n} dni',
+    big_cost: 'Strošek', big_tokens: 'Obdelani žetoni', span_today: ', danes', span_days: ', {n} dni', big_caption: 'ekvivalent API, ni zaračunano',
+    delta: 'glede na prejšnjih {span} ({prev})', span2_days: '{n} dni', delta_today: 'glede na včeraj ob istem času ({prev})',
     delta_nodata: 'Za primerjavo s prejšnjim obdobjem ni dovolj podatkov.', delta_zero: 'V prejšnjem obdobju ni bilo porabe.',
     sessions: 'Seje', calls: 'Klici modela', avg_hour: 'Povprečje na uro', avg_day: 'Povprečje na dan', peak_hour: 'Najmočnejša ura', peak_day: 'Najmočnejši dan',
     chart_title: '{by}, {what} po modelih', by_hour: 'Po urah', by_day: 'Po dnevih', what_cost: 'strošek', what_tokens: 'žetoni',
-    h_totals: 'Vsote', tot_all: 'Obdelani žetoni', tot_read: 'Branje iz predpomnilnika', tot_unc: 'Nepredpomnjen vhod', tot_out: 'Izhod', tot_cost: 'Strošek (API ekv.)', tot_saved: 'Prihranek predpomnilnika',
-    h_types: 'Žetoni po vrsti', ty_in: 'Vhod', ty_read: 'Branje iz predpomnilnika', ty_write: 'Zapis v predpomnilnik', ty_out: 'Izhod',
-    h_models: 'Po modelih', h_projects: 'Po projektih', th_model: 'Model', th_project: 'Projekt', th_cost: 'Strošek', th_share: 'Delež stroška', th_tokens: 'Žetoni',
-    other: 'ostalo', other_n: 'ostalo ({n})',
-    h_sub: 'Glavna seja in podagenti', h_sub_hint: 'po strošku', sub_main: 'Glavna seja', sub_agents: 'Podagenti',
-    h_sessions: 'Najdražje seje v obdobju', h_sessions_hint: 'skupaj s podagenti', th_session: 'Seja', th_last: 'Zadnja aktivnost',
+    hl_errors: 'Napake API: {n}', hl_comp: 'Stiskanja: {n}', hl_go: 'Pokaži v Sejah',
+    hl_pricing_ok: 'Cenitev: vsi klici imajo ceno', hl_pricing_unpriced: 'Cenitev: nekateri modeli nimajo cene', hl_pricing_approx: 'Cenitev: nekateri klici so približni',
+    top_projects: 'Največ po projektih', top_models: 'Največ po modelih', top_session: 'Največja seja', top_open: 'Odpri v Sejah',
+    ov_source: 'Vir: zapisi o uporabi Claude na tem Macu (dnevniki Claude Code, seje Cowork, zgodovina porabe naročnine iz aplikacije Claude), ocenjeni po javnem ceniku.',
+    h_breakdown: 'Razčlenitev', bk_follow: 'Sledi obdobju. Filtri na drugih razsežnostih ga zožijo.',
+    bk_hint: 'Klikni vrstico, da po njej filtriraš celo stran; ponovni klik filter odstrani.',
+    h_tokens: 'Žetoni', tot_all: 'Obdelani žetoni', tot_read: 'Branje iz predpomnilnika', tot_unc: 'Nepredpomnjen vhod', tot_out: 'Izhod', tot_saved: 'Prihranek predpomnilnika',
+    tot_saved_note: 'Koliko več bi stali prebrani žetoni po polni vhodni ceni.',
+    ty_in: 'Vhod', ty_read: 'Branje iz predpomnilnika', ty_write: 'Zapis v predpomnilnik', ty_out: 'Izhod',
+    th_model: 'Model', th_project: 'Projekt', th_cost: 'Strošek', th_share: 'Delež', th_tokens: 'Žetoni',
+    other: 'ostalo', other_n: 'ostalo ({n})', sub_main: 'Glavna seja', sub_agents: 'Podagenti',
+    h_sessions: 'Seje', h_sessions_hint: 'Največje v obdobju po izbrani meri, skupaj s podagenti. Klikni vrstico, da odpreš graf konteksta.',
+    th_session: 'Seja', th_last: 'Zadnja aktivnost', row_open: 'Odpri graf konteksta',
     untitled: 'Brez naslova', calls_total: '{n} klicev v celi seji',
-    h_agents: 'Po agentih', h_efforts: 'Po effort', th_agent: 'Agent', th_effort: 'Effort',
+    th_agent: 'Agent', th_effort: 'Effort',
     agent_main: 'glavna seja', agent_unknown: 'podagent (vrsta ni zapisana)', effort_none: 'ni zapisan',
     flt_project: 'Projekt', flt_model: 'Model', flt_agent: 'Agent', flt_effort: 'Effort', flt_clear: 'Počisti filtre',
-    flt_hint: 'Klikni vrstico v katerikoli tabeli razčlenitve, da filtriraš celo stran.', sess_nofilter: 'Seje se filtrirajo samo po projektu.',
+    sess_nofilter: 'Seje, stiskanja in napake API sledijo samo filtru projekta; klici ne upoštevajo filtra Skill / MCP.',
     h_week: 'Ta teden glede na tedensko omejitev', wk_est: 'ocena iz porabe na tem Macu', wk_meas: 'izmerjeno ob osvežitvi', wk_pace: 'enakomeren tempo',
     wk_none: 'Za ta teden še ni dovolj podatkov.',
     pace_hit: 'Ob tem tempu bo tedenska omejitev dosežena {at}', pace_end: 'Ob tem tempu se teden konča pri približno {pct}',
     btn_csv: 'Izvozi CSV',
     lim_5h: 'To okno na tem Macu: {cost}, to je {per} na 1 %', pace5_hit: 'Ob tem tempu bo 5-urna omejitev dosežena {at}', pace5_end: 'Ob tem tempu se okno konča pri približno {pct}',
     lim_left: 'Prostora ta teden pri tem razmerju: {cost}, to je {perday} na dan do ponastavitve',
-    h_qweeks: 'Kvotni tedni', h_qweeks_hint: 'od ponastavitve do ponastavitve, šteto nazaj od trenutnega časa ponastavitve; sledi filtrom, ne obdobju',
+    h_qweeks: 'Prejšnji tedni', h_qweeks_hint: 'od ponastavitve do ponastavitve, šteto nazaj od trenutnega časa ponastavitve; sledi filtrom, ne obdobju',
     th_week: 'Teden', th_limit_used: 'Poraba tedenske omejitve', qw_current: 'tekoči', qw_sofar: 'doslej', qw_lastseen: 'ob zadnji osvežitvi tisti teden',
     qw_none: 'Tedenska omejitev ni bila prebrana, zato meje tednov niso znane.',
-    h_via: 'Po skillih in MCP strežnikih', h_via_hint: 'klici, ki so tekli pod skillom ali uporabili MCP strežnik; delež celotnega stroška',
-    th_via: 'Skill ali MCP strežnik', via_none: 'brez skilla ali MCP strežnika', via_skill: 'Skill', flt_via: 'Skill / MCP', none_period: 'V tem obdobju ni ničesar.',
-    h_errors: 'Napake API', h_errors_hint: 'v obdobju; sledi samo filtru projekta', th_kind: 'Vrsta', th_count: 'Število', th_lastseen: 'Zadnjič',
+    h_via_hint: 'Klici, ki so tekli pod skillom ali uporabili MCP strežnik; delež je od celotnega stroška.',
+    th_via: 'Skill / MCP strežnik', via_none: 'brez skilla ali MCP strežnika', via_skill: 'Skill', flt_via: 'Skill / MCP', none_period: 'V tem obdobju ni ničesar.',
+    h_problems: 'Težave', h_problems_hint: 'Stiskanja in napake API v obdobju.',
+    h_errors: 'Napake API', th_kind: 'Vrsta', th_count: 'Število', th_lastseen: 'Zadnjič',
     err_retry: 'Ponovljen klic', err_final: 'Neuspel klic', err_none: 'V tem obdobju ni napak API.',
-    h_heat: 'Kdaj nastaja poraba', h_heat_hint: 'dan v tednu po urah, v izbranem obdobju',
-    ctx_hint: 'Klikni sejo zgoraj, da vidiš, kako je rasel njen kontekst.', ctx_title: 'Velikost konteksta na klic: {title}',
+    h_heat: 'Kdaj nastaja poraba', h_heat_hint: 'dan v tednu po urah, v izbranem obdobju', heat_low: 'Malo', heat_high: 'Veliko',
+    ctx_title: 'Velikost konteksta na klic: {title}',
     ctx_none: 'Za to sejo ni zapisanih klicev glavne niti.',
     ctx_note: '{n} klicev glavne niti, največji kontekst {peak}, stisnjeno {c}-krat (črtkane črte).',
-    comp_line: 'Stiskanja v obdobju: {n} ({auto} samodejnih, {manual} ročnih); tipičen kontekst pred stiskanjem: {pre}', comp_none: 'V tem obdobju ni bilo stiskanj.',
-    h_calls: 'Najdražji posamezni klici', h_calls_hint: 'izmed 20 najdražjih klicev vsakega dne', th_time: 'Čas', th_context: 'Kontekst', th_output: 'Izhod',
-    calls_novia: 'Filter Skill / MCP za ta seznam ne velja.', calls_filtered: 'Pri vključenem filtru klic, ki ni med 20 najdražjimi svojega dne, ni prikazan.'
+    comp_line: 'Stiskanja v obdobju: {n} ({auto} samodejnih, {manual} ročnih); tipičen kontekst pred stiskanjem: {pre}.', comp_none: 'V tem obdobju ni bilo stiskanj.',
+    h_calls: 'Klici', h_calls_hint: 'Najdražji posamezni klici. Hranjenih je samo 20 najdražjih klicev vsakega dne, zato pri vključenem filtru cenejši klici morda manjkajo.',
+    th_time: 'Čas', th_context: 'Kontekst', th_output: 'Izhod'
   }
 };
 var APP = {
@@ -286,21 +309,26 @@ function applyStatic() {
   document.documentElement.lang = APP.lang;
   document.querySelectorAll('[data-i18n]').forEach(function (e) { e.textContent = APP.t(e.getAttribute('data-i18n')); });
   document.querySelectorAll('[data-i18n-aria]').forEach(function (e) { e.setAttribute('aria-label', APP.t(e.getAttribute('data-i18n-aria'))); });
+  document.querySelectorAll('[data-i18n-title]').forEach(function (e) { e.title = APP.t(e.getAttribute('data-i18n-title')); });
   document.querySelectorAll('[data-lang]').forEach(function (b) { var on = b.getAttribute('data-lang') === APP.lang; b.classList.toggle('on', on); b.setAttribute('aria-pressed', String(on)); });
-  renderStatus(); renderNotes(); renderSetup();
+  renderStatus(); renderSetup();
 }
 function setStatus(key, vars, bad) { statusNow = { key: key, vars: vars, bad: bad }; renderStatus(); }
-function renderStatus() { var s = document.getElementById('l-status'); if (!s) return; s.textContent = APP.t(statusNow.key, statusNow.vars || {}); s.classList.toggle('bad', !!statusNow.bad); }
-function renderNotes() {
-  var box = document.getElementById('l-notes'); if (!box) return;
-  var notes = RAW ? (RAW.meta[0].notes || []) : [];
-  box.textContent = notes.map(function (n) {
-    if (typeof n === 'string') return n;
-    return APP.t('note_' + n.code, { why: n.why ? APP.t('why_' + n.why) : '', detail: n.detail || '' });
-  }).join(' ');
-  box.hidden = !notes.length;
+// The time of an update: the clock time for today, else the day and time.
+function statusTime(d) {
+  var loc = APP.lang === 'sl' ? 'sl-SI' : 'en-GB';
+  return d.toDateString() === new Date().toDateString() ? d.toLocaleTimeString(loc, { hour: '2-digit', minute: '2-digit' })
+    : d.toLocaleString(loc, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
 }
-function show(json) { RAW = json; cache = {}; renderNotes(); drawAll(); }
+function renderStatus() {
+  var s = document.getElementById('l-status'); if (!s) return;
+  var vars = statusNow.vars || {}, stale = false;
+  if (statusNow.at) { vars = { time: statusTime(statusNow.at) }; stale = Date.now() - statusNow.at > 24 * 36e5; }  // a snapshot over a day old is flagged
+  s.textContent = APP.t(statusNow.key, vars); s.title = s.textContent;
+  s.classList.toggle('bad', !!statusNow.bad); s.classList.toggle('warn', stale);
+}
+// A new snapshot: the header says when it was taken.
+function show(json) { RAW = json; cache = {}; statusNow = { key: 'st_updated', at: new Date(json.meta[0].generated_at) }; renderStatus(); drawAll(); }
 function setLang(l) {
   APP.lang = l === 'sl' ? 'sl' : 'en';
   try { localStorage.setItem('usage-claude-lang', APP.lang); } catch (e) {}
@@ -313,7 +341,6 @@ function loadFresh() {
   fetch('/data.json', { headers: { 'X-Usage-Claude': '1' } }).then(function (r) { return r.json().then(function (j) { if (!r.ok) throw new Error(j.error || r.status); return j; }); })
     .then(function (j) {
       clearInterval(tick); show(j);
-      setStatus('st_done', { time: new Date().toLocaleTimeString(APP.lang === 'sl' ? 'sl-SI' : 'en-GB', { hour: '2-digit', minute: '2-digit' }), s: Math.round((Date.now() - t0) / 1000) });
     })
     .catch(function (e) {
       clearInterval(tick);
@@ -452,7 +479,7 @@ function renderSetup() {
   box.appendChild(row);
 
   box.appendChild(el('h3', '', T('setup_does')));
-  list(['does_logs', 'does_cowork', 'does_plan_history', 'does_prices', 'does_limits', 'does_signin']);
+  list(['does_logs', 'does_cowork', 'does_plan_history', 'does_prices', 'does_update', 'does_limits', 'does_signin']);
   var label = el('label'), cb = el('input'), txt = el('span');
   cb.type = 'checkbox'; cb.checked = SETUP.limits;
   cb.addEventListener('change', function () { SETUP.limits = cb.checked; });
@@ -475,14 +502,13 @@ function renderSetup() {
 
 function startDash() {
   fetch('/last.json', { headers: HDR }).then(function (r) { if (!r.ok) throw 0; return r.json(); })
-    .then(function (j) { if (!j.meta) throw 0; show(j); setStatus('st_last'); })  // {} means no snapshot yet
+    .then(function (j) { if (!j.meta) throw 0; show(j); })  // {} means no snapshot yet
     .catch(function () { loadFresh(); });
 }
 window.addEventListener('DOMContentLoaded', function () {
   applyStatic();
   document.getElementById('l-refresh').addEventListener('click', loadFresh);
   document.querySelectorAll('[data-lang]').forEach(function (b) { b.addEventListener('click', function () { setLang(b.getAttribute('data-lang')); }); });
-  window.addEventListener('resize', function () { if (RAW) { dash.draw('chart'); dash.draw('weekchart'); dash.draw('appchart'); } });
   if (!BRIDGE) return startDash();
   var sb = document.getElementById('l-setup-btn');
   sb.hidden = false; sb.addEventListener('click', openSetup);
@@ -492,19 +518,14 @@ window.addEventListener('DOMContentLoaded', function () {
 </head>
 <body>
 <div class="l-bar">
-  <button class="l-btn" id="l-refresh" type="button" data-i18n="btn_refresh"></button>
-  <button class="l-btn l-alt" id="l-setup-btn" type="button" data-i18n="btn_setup" hidden></button>
-  <span class="l-status" id="l-status" role="status"></span>
   <div class="l-lang" role="group" data-i18n-aria="aria_lang">
     <button type="button" data-lang="en">EN</button>
     <button type="button" data-lang="sl">SL</button>
   </div>
 </div>
-<div class="l-notes" id="l-notes" hidden></div>
 <div class="l-setup" id="l-setup"></div>
 <div id="dash-root">
 <!--PAGE-->
 </div>
-<p class="l-foot" data-i18n="foot"></p>
 </body>
 </html>
