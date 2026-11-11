@@ -423,6 +423,20 @@ def test_project_naming():
     assert B.project_of("/w/root/app", "fold") == "/w/root/app"
     assert B.project_of(home + "/work", "fold") == "~/work"
     assert B.project_of(home + "/work/client/shop", "fold") == "~/work/client/shop"
+    # without roots: a call below the folder the session started in counts for that folder (the transcript
+    # folder is named after it), a call elsewhere keeps its own folder, home never collects, a worktree is its repo
+    enc = lambda p: "".join(c if c.isalnum() and c.isascii() else "-" for c in p)
+    app = home + "/my code/app.v2"
+    assert B.project_of(app + "/src/ui", enc(app)) == "~/my code/app.v2"
+    assert B.project_of(app, enc(app)) == "~/my code/app.v2"
+    assert B.project_of(home + "/other/x", enc(app)) == "~/other/x"
+    assert B.project_of(home + "/work/a/b", enc(home)) == "~/work/a/b"
+    assert B.project_of(home, enc(home)) == "~"
+    assert B.project_of(app + "/.claude/worktrees/fix-1/src", enc(app + "/.claude/worktrees/fix-1")) == "~/my code/app.v2"
+    assert B.project_of(app + "/.claude/worktrees/fix-1", "fold") == "~/my code/app.v2"
+    assert B.project_of("/w/root/app/sub", enc("/w/root/app")) == "/w/root/app"
+    assert B.project_of(home + "x/y", "fold") == home + "x/y"          # a sibling of home is not under home
+    assert B.project_of(app + "/src", enc(app), ["~/my code"], []) == "app.v2"   # configured roots are unchanged
     # a root given with ~ and a trailing slash
     assert B.project_of(home + "/work/a", "fold", ["~/work/"], []) == "a"
     cfg = {"project_roots": ["/w/root", 5, ""], "group_folders": ["client", None]}

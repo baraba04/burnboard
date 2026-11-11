@@ -43,10 +43,17 @@ STATUS = re.compile(r"\b([45]\d\d)\b")
 EVENT_MARKS = ('"compact_boundary"', '"api_error"', '"isApiErrorMessage":true')
 
 
+_NOT_ALNUM = re.compile(r"[^A-Za-z0-9]")
+
+
 def project_of(cwd, folder, project_roots=(), group_folders=()):
     """Name of the project a call ran in. Under a project root (from the config) it is the first
     folder below the root, or the first two when the first is a group folder; the root itself is
-    "<root name> (supervisor)". Anything else is the path relative to home."""
+    "<root name> (supervisor)". Anything else is the path relative to home, of the folder the session
+    started in when the call ran inside it (so a `cd` into a subfolder does not split a project) and of
+    the repository when it ran in one of its `.claude/worktrees`. The start folder is recognised from the
+    transcript folder's name alone (Claude Code names it after the start folder, every character that is
+    not a letter or digit turned into "-"); nothing on disk is looked at. Home itself never collects."""
     if cwd:
         for root in project_roots:
             root = os.path.expanduser(root).rstrip("/")
@@ -59,7 +66,15 @@ def project_of(cwd, folder, project_roots=(), group_folders=()):
                 if parts[0] in group_folders and len(parts) > 1:
                     return "/".join(parts[:2])
                 return parts[0]
-        if cwd.startswith(HOME):
+        parts = cwd.split("/")
+        for i in range(len(parts) - 1, 1, -1):  # a shorter prefix of cwd that the transcript folder is named after
+            start = "/".join(parts[:i])
+            if _NOT_ALNUM.sub("-", start) == folder:
+                if start != HOME:
+                    cwd = start
+                break
+        cwd = cwd.split("/.claude/worktrees/")[0]
+        if cwd == HOME or cwd.startswith(HOME + "/"):
             return "~" + cwd[len(HOME):]
         return cwd
     return folder
