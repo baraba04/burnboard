@@ -498,50 +498,6 @@ func disposeOld(_ path: String, in parent: String, id: String) {
     try? fm.removeItem(at: url)  // when this fails too the old app stays under its visible name; the new one is in place
 }
 
-// Tidying the Downloads folder, once per run, after the first refresh that the consent allowed: what the download and an update leave behind goes to the
-// Trash by itself. Only items directly in `folder`, only to the Trash (never removed for good), never through a link
-// (the folder and every item are checked as themselves), never anything newer than the running app:
-// - the release zip, by its exact name ("Burnboard-1.3.zip", also the browser's "Burnboard-1.3 (1).zip"), a regular
-//   file no larger than a release may be;
-// - old copies of the app ("Burnboard.app", "Burnboard 2.app") that are real Burnboard bundles, only when this app
-//   runs from its settled place: not translocated (then one of those copies is the running app) and not from
-//   `folder` itself.
-func tidyDownloads(_ folder: URL, running: URL) {
-    let fm = FileManager.default
-    guard let mine = versionParts(runningVersion), fileKind(folder.path) == S_IFDIR,
-          let names = try? fm.contentsOfDirectory(atPath: folder.path) else { return }
-    let translocated = running.path.contains("/AppTranslocation/")
-    let runningPath = running.resolvingSymlinksInPath().path
-    let settled = !translocated && running.pathExtension == "app"
-        && running.deletingLastPathComponent().resolvingSymlinksInPath().path != folder.resolvingSymlinksInPath().path
-    func toTrash(_ url: URL) {
-        #if UPDATE_TEST
-        // never the real Trash in a test build
-        if let dest = testEnvironment["BURNBOARD_TEST_TRASH"] {
-            try? fm.moveItem(at: url, to: URL(fileURLWithPath: dest).appendingPathComponent(url.lastPathComponent))
-        }
-        #else
-        try? fm.trashItem(at: url, resultingItemURL: nil)
-        #endif
-    }
-    for name in names {
-        let path = folder.appendingPathComponent(name).path
-        if name.range(of: "^Burnboard-[0-9]+(\\.[0-9]+){1,2}( \\([0-9]{1,3}\\))?\\.zip$", options: .regularExpression) != nil {
-            var version = String(name.dropFirst("Burnboard-".count).prefix { $0 == "." || $0.isNumber })  // "1.3." or "1.3"
-            if version.hasSuffix(".") { version.removeLast() }
-            var st = stat()
-            guard let theirs = versionParts(version), !isNewer(theirs, than: mine),
-                  lstat(path, &st) == 0, st.st_mode & S_IFMT == S_IFREG, st.st_size <= off_t(updateMaxSize) else { continue }
-            toTrash(URL(fileURLWithPath: path))
-        } else if settled, name.range(of: "^Burnboard( [0-9]{1,3})?\\.app$", options: .regularExpression) != nil {
-            guard isBurnboardBundle(path), URL(fileURLWithPath: path).resolvingSymlinksInPath().path != runningPath,
-                  let theirs = versionParts(bundleInfo(path)?["CFBundleShortVersionString"] as? String ?? ""),
-                  !isNewer(theirs, than: mine) else { continue }
-            toTrash(URL(fileURLWithPath: path))
-        }
-    }
-}
-
 // Puts the verified bundle at the target without a moment where no app is there. It is copied next to the target
 // (same volume) and checked again; an existing target is exchanged with it by renamex_np(RENAME_SWAP), so the old
 // bundle ends up at the staged name and goes through disposeOld. A volume without exchange support (ENOTSUP,
@@ -769,19 +725,6 @@ final class Bridge: NSObject, WKScriptMessageHandlerWithReply {
     }
 }
 
-// The Downloads tidying runs at most once per run of the app, off the main thread, never in snapshot mode.
-private var tidyStarted = false
-func tidyOnce() {
-    DispatchQueue.main.async {
-        guard !tidyStarted, ProcessInfo.processInfo.environment["USAGE_CLAUDE_SNAPSHOT"] == nil else { return }
-        tidyStarted = true
-        DispatchQueue.global(qos: .utility).async {
-            tidyDownloads(FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Downloads"),
-                          running: Bundle.main.bundleURL)
-        }
-    }
-}
-
 // Serves burnboard://app/. Fixed routes, GET only; everything else is a 404.
 final class SchemeHandler: NSObject, WKURLSchemeHandler {
     // Touched on the main thread only. A task that the web view has stopped must never be answered.
@@ -811,7 +754,6 @@ final class SchemeHandler: NSObject, WKURLSchemeHandler {
         start(task, { job in
             switch runCLI(route.args, job) {
             case .done(let status, let out):
-                if status == 0 && url.path == "/data.json" { tidyOnce() }  // a refresh succeeds only with consent given
                 return (status == 0 ? 200 : 500, route.type, out)
             case .noPython:
                 if url.path == "/" { return (200, "text/html; charset=utf-8", Data(noPythonPage.utf8)) }
@@ -995,16 +937,6 @@ if CommandLine.arguments.dropFirst().first == "--update-test" {
     case .success: print("{\"ok\":true}")
     case .failure(let why): print("{\"error\":\"\(why.rawValue)\"}")
     }
-    exit(0)
-}
-#endif
-
-#if UPDATE_TEST
-// Test builds only: `Burnboard --tidy-test` runs the Downloads tidying on BURNBOARD_TEST_DOWNLOADS as if the app ran
-// from BURNBOARD_TEST_OWN_PATH.
-if CommandLine.arguments.dropFirst().first == "--tidy-test" {
-    tidyDownloads(URL(fileURLWithPath: testEnvironment["BURNBOARD_TEST_DOWNLOADS"]!),
-                  running: URL(fileURLWithPath: testEnvironment["BURNBOARD_TEST_OWN_PATH"]!))
     exit(0)
 }
 #endif

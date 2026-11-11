@@ -190,7 +190,7 @@ def cmd_page(_args):
 def cmd_last(_args):
     try:
         with open(core.last_path(core.active_profile(core.load_config())), "rb") as fh:
-            return fh.read()
+            return core.current_update(fh.read())
     except OSError:
         return b"{}"
 

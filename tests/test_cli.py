@@ -659,6 +659,27 @@ def test_data_with_plan_history():
     reset()
 
 
+def test_current_update():
+    """A stored snapshot offers an update only for a version newer than the app that serves it."""
+    snap = lambda u: json.dumps({"meta": [dict({"generated_at": "x"}, **({"update": u} if u is not None else {}))]}).encode()
+    kept = os.environ.pop("BURNBOARD_VERSION", None)
+    try:
+        for running, stored, stays in (("1.3.1", {"version": "1.3.2"}, True), ("1.3.2", {"version": "1.3.2"}, False),
+                                       ("1.4", {"version": "1.3.2"}, False), (None, {"version": "1.3.2"}, False),
+                                       ("1.3.1", {"version": "x"}, False), ("1.3.1", "1.3.2", False), ("1.3.1", None, False)):
+            os.environ.pop("BURNBOARD_VERSION", None)
+            if running:
+                os.environ["BURNBOARD_VERSION"] = running
+            got = json.loads(core.current_update(snap(stored)))["meta"][0]
+            assert ("update" in got) is stays and got["generated_at"] == "x", (running, stored)
+        assert core.current_update(b"{}") == b"{}" and core.current_update(b'{"update"') == b'{"update"'
+        assert core.current_update(b'{"meta":[],"x":"\"update\""}') == b'{"meta":[],"x":"\"update\""}'
+    finally:
+        os.environ.pop("BURNBOARD_VERSION", None)
+        if kept is not None:
+            os.environ["BURNBOARD_VERSION"] = kept
+
+
 def test_update_check():
     """The release file is requested at a refresh only when the app says which version runs (BURNBOARD_VERSION), is
     ignored when anything about it is wrong, and only its version reaches the page."""
@@ -935,12 +956,12 @@ def test_sign_in():
 
 def main():
     for t in (test_config_and_consent, test_other_sources, test_plan_history, test_profiles, test_paths_and_env, test_project_naming,
-              test_data_without_consent, test_data_with_consent, test_data_with_plan_history, test_update_check, test_limits_env, test_sign_in):
+              test_data_without_consent, test_data_with_consent, test_data_with_plan_history, test_update_check, test_current_update, test_limits_env, test_sign_in):
         t()
     print("ok: config round trip and mode, consent versions, profiles (add/use/remove, bad folders, links), "
           "Cowork and ~/.config/claude read for the default profile only (one call counted once, links not followed, source counts), "
           "the Claude app's plan usage history (bad files, links, size cap, default profile only, org id never output), "
-          "the update check (version compare, meta.update only for a newer version, oversize and malformed files and foreign redirects ignored, no request offline or without the running version), "
+          "the update check (version compare, meta.update only for a newer version, oversize and malformed files and foreign redirects ignored, no request offline or without the running version; a stored notice dropped unless newer than the running app), "
           "project naming, data refused without consent, data with limits off and on, limits call without API key variables, sign-in (success, failure, other profile, time limit, SIGTERM, no CLI)")
 
 

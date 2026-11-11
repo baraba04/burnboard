@@ -153,6 +153,27 @@ def update_check():
     return {"version": version} if latest and latest > running else None
 
 
+def current_update(body):
+    """A stored snapshot as it may be served now: its update notice is kept only when it names a version newer than
+    the running app. A snapshot written by an older version just before it updated itself must not offer that update."""
+    if b'"update"' not in body:
+        return body
+    try:
+        snap = json.loads(body)
+        meta = snap["meta"][0]
+        found = meta.get("update")
+    except (ValueError, KeyError, IndexError, TypeError, AttributeError):
+        return body
+    if found is None:
+        return body
+    running = version_tuple(os.environ.get("BURNBOARD_VERSION"))
+    latest = version_tuple(found.get("version")) if isinstance(found, dict) else None
+    if running and latest and latest > running:
+        return body
+    del meta["update"]
+    return json.dumps(snap, separators=(",", ":"), ensure_ascii=False).encode()
+
+
 def default_profile():
     return {"id": DEFAULT_ID, "name": "Default",
             "dir": os.path.expanduser(os.environ.get("CLAUDE_CONFIG_DIR") or os.path.join(HOME, ".claude"))}
@@ -456,7 +477,7 @@ def data(profile, limits_call=True):
     with open(os.path.join(private_cache(profile), "lock"), "w") as lock:
         fcntl.flock(lock, fcntl.LOCK_EX)  # one build at a time
         if os.path.exists(last) and time.time() - os.path.getmtime(last) < 10:
-            return open(last, "rb").read()  # another request just built it
+            return current_update(open(last, "rb").read())  # another request just built it
         return fresh(profile, limits_call)
 
 
