@@ -1,7 +1,7 @@
 {
-  "version": "1.3",
-  "zip": "https://github.com/baraba04/burnboard/releases/download/v1.3/Burnboard-1.3.zip",
-  "sha256": "bf191f7ab687b7cb7c31e34d2156ba4f97c8393297818c8c207c421056592d4a",
-  "size": 1291297,
-  "sig": "ditfXOmKvbfatdgwnq4y0ssjIvdKyLqBuvBJclHExhYbQPzjBN6vyv1Ym6aLPwEQzgmVL9tYx4LTOuVnQAC/DA=="
+  "version": "1.3.1",
+  "zip": "https://github.com/baraba04/burnboard/releases/download/v1.3.1/Burnboard-1.3.1.zip",
+  "sha256": "a6c1c18f99e07b766045efd1bca9f8c10abc5392c62775c624eac292161d7f6d",
+  "size": 1291294,
+  "sig": "Jl0LUiQRnF/vmj//PziEegczR6lzIhsXkg6py1MiRCc6aU2BDoxSHYVYhffXf1VujHiIN9o5oEigL4qTTbh7AA=="
 }
