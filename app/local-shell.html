@@ -519,6 +519,7 @@ window.addEventListener('DOMContentLoaded', function () {
   sb.hidden = false; sb.addEventListener('click', openSetup);
   getStatus().then(function (st) {
     var ver = document.getElementById('l-version');
+    APP.decimal = st.decimal === ',' ? ',' : '.';
     if (st.version && ver) { ver.textContent = 'Burnboard ' + st.version; ver.hidden = false; }
     if (st.needs_setup) showSetup(st); else startDash();
   }).catch(startDash);

@@ -99,6 +99,17 @@ def test_config_and_consent():
         os.environ.pop("BURNBOARD_VERSION", None)
         if kept is not None:
             os.environ["BURNBOARD_VERSION"] = kept
+    # the Mac's decimal separator for the CSV export: only "," is passed on, anything else is "."
+    keptd = os.environ.pop("BURNBOARD_DECIMAL", None)
+    try:
+        assert run("status")[1]["decimal"] == "."
+        for given, shown in ((",", ","), (".", "."), (";", "."), ("<b>", "."), ("", ".")):
+            os.environ["BURNBOARD_DECIMAL"] = given
+            assert run("status")[1]["decimal"] == shown, given
+    finally:
+        os.environ.pop("BURNBOARD_DECIMAL", None)
+        if keptd is not None:
+            os.environ["BURNBOARD_DECIMAL"] = keptd
     assert set(out["claude"]) == {"found", "version", "loggedIn", "email", "subscriptionType"}
     assert "node" not in out and isinstance(out["python"], str)
 

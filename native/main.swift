@@ -129,7 +129,10 @@ func runCLI(_ args: [String], _ job: Job) -> CLIResult {
     p.arguments = ["-I", "-B", "-X", "utf8", appDir.appendingPathComponent("cli.py").path] + args
     let pipe = Pipe()
     // cli.py checks for a newer version only when it knows which one is running (the development server does not).
-    if !runningVersion.isEmpty { p.environment = ProcessInfo.processInfo.environment.merging(["BURNBOARD_VERSION": runningVersion]) { $1 } }
+    // The Mac's decimal separator goes along so the CSV export matches what a spreadsheet on this Mac expects.
+    var extra = ["BURNBOARD_DECIMAL": Locale.current.decimalSeparator == "," ? "," : "."]
+    if !runningVersion.isEmpty { extra["BURNBOARD_VERSION"] = runningVersion }
+    p.environment = ProcessInfo.processInfo.environment.merging(extra) { $1 }
     p.standardOutput = pipe
     p.standardError = FileHandle.nullDevice
     p.standardInput = FileHandle.nullDevice

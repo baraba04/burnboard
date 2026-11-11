@@ -1063,9 +1063,11 @@ dash.loader('status', { fn: function (a) {
     });
     // Text cells are quoted; a leading = + - @ is neutralised so a spreadsheet never runs it as a formula.
     var cell = function (x) { var c = String(x); if (/^[=+\-@\t\r]/.test(c)) c = "'" + c; return '"' + c.replace(/"/g, '""') + '"'; };
-    var lines = [['period'].concat(keys, ['input', 'output', 'cache_write', 'cache_read', 'tokens', 'cost_usd', 'calls']).join(',')];
+    // A Mac that writes decimals with a comma gets ';' between cells and ',' in the cost, as its spreadsheets expect.
+    var dec = APP.decimal === ',' ? ',' : '.', sep = dec === ',' ? ';' : ',';
+    var lines = [['period'].concat(keys, ['input', 'output', 'cache_write', 'cache_read', 'tokens', 'cost_usd', 'calls']).join(sep)];
     Array.from(agg.values()).sort(function (a, b) { return a.id.join('\u0001') < b.id.join('\u0001') ? -1 : 1; }).forEach(function (a) {
-      lines.push(a.id.map(cell).concat(a.n.map(function (x, i) { return nums[i] === 'cost' ? x.toFixed(4) : String(Math.round(x)); })).join(','));
+      lines.push(a.id.map(cell).concat(a.n.map(function (x, i) { return nums[i] === 'cost' ? x.toFixed(4).replace('.', dec) : String(Math.round(x)); })).join(sep));
     });
     var url = URL.createObjectURL(new Blob(['﻿' + lines.join('\r\n') + '\r\n'], { type: 'text/csv;charset=utf-8' })), a = document.createElement('a');
     a.href = url; a.download = 'burnboard-' + state.range + '-' + dayKey(v.b.now) + '.csv';
