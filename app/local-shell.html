@@ -70,7 +70,7 @@ var I18N = {
     btn_refresh: 'Refresh', st_loading: 'Loading …', st_last: 'Showing the last snapshot. Click Refresh for fresh data.',
     st_reading: 'Reading logs and limits … {s} s', st_done: 'Refreshed at {time} (in {s} s)', st_fail: 'Refresh failed: {msg}',
     note_prices_offline: 'The price list was unreachable, so the saved one was used.',
-    note_limits_failed: 'Plan limits were not read: {why}.', why_timeout: 'the limits call did not answer in 60 s', why_nodata: 'the response had no limit data',
+    note_limits_failed: 'Plan limits were not read: {why}.', why_timeout: 'the limits call did not answer in 60 s', why_nodata: 'the response had no limit data', why_no_claude: 'Claude Code is not on this Mac',
     note_unpriced: 'No price for: {detail}.',
     note_approx_pricing: '{detail} calls used a pricing variant this app cannot price exactly (for example fast mode); they are counted at the standard price.',
     note_limits_off: 'Plan limits were not read because that call is switched off in Setup.',
@@ -84,7 +84,8 @@ var I18N = {
     setup_title: 'Set up Burnboard', setup_intro: 'Read what the app finds and what it does, then agree to open the dashboard.',
     setup_found: 'What was found', setup_python: 'Python {v}.',
     setup_claude_ok: 'Claude Code found{v}.',
-    setup_claude_none: 'Claude Code was not found on this Mac. Burnboard shows your Claude Code usage, so there is nothing to show without it. Get it, then click Check again.',
+    setup_claude_none: 'No Claude usage was found on this Mac. Burnboard shows the usage of Claude Code and Cowork; chats on claude.ai leave no usage records on the Mac. If you want to start with Claude Code, get it and click Check again.',
+    setup_claude_optional: 'Claude Code is not on this Mac, so plan limits are not shown. Everything else works.',
     setup_signed_in: 'Signed in as {email}, plan {plan}.', setup_signed_in_plain: 'Signed in.',
     setup_not_signed: 'Nobody is signed in to Claude Code. Click the button: Claude Code opens Anthropic\'s own sign-in page in your browser; Burnboard never sees your password or token. The dashboard works without it, but the plan limits need a sign-in.',
     setup_signin_unknown: 'Whether Claude Code is signed in could not be read. If it is not, you can sign in here: Claude Code opens Anthropic\'s own sign-in page in your browser, and Burnboard never sees your password or token. The plan limits need a sign-in.',
@@ -156,7 +157,7 @@ var I18N = {
     btn_refresh: 'Osveži', st_loading: 'Nalagam …', st_last: 'Prikazan je zadnji posnetek. Klikni Osveži za sveže podatke.',
     st_reading: 'Berem dnevnike in omejitve … {s} s', st_done: 'Osveženo ob {time} (v {s} s)', st_fail: 'Osvežitev ni uspela: {msg}',
     note_prices_offline: 'Cenik ni bil dosegljiv, uporabljen je shranjeni.',
-    note_limits_failed: 'Omejitve niso bile prebrane: {why}.', why_timeout: 'klic za omejitve ni odgovoril v 60 s', why_nodata: 'odgovor ni vseboval omejitev',
+    note_limits_failed: 'Omejitve niso bile prebrane: {why}.', why_timeout: 'klic za omejitve ni odgovoril v 60 s', why_nodata: 'odgovor ni vseboval omejitev', why_no_claude: 'Claude Code ni na tem Macu',
     note_unpriced: 'Brez cene: {detail}.',
     note_approx_pricing: '{detail} klicev je uporabilo različico cenitve, ki je aplikacija ne more izračunati natančno (na primer hitri način); obračunani so po standardni ceni.',
     note_limits_off: 'Omejitve niso bile prebrane, ker je ta klic izklopljen v nastavitvi.',
@@ -170,7 +171,8 @@ var I18N = {
     setup_title: 'Nastavitev Burnboard', setup_intro: 'Preberi, kaj aplikacija najde in kaj dela, nato potrdi, da se odpre nadzorna plošča.',
     setup_found: 'Kaj je najdeno', setup_python: 'Python {v}.',
     setup_claude_ok: 'Claude Code je najden{v}.',
-    setup_claude_none: 'Claude Code na tem Macu ni najden. Burnboard prikazuje tvojo porabo Claude Code, zato brez njega ni kaj pokazati. Pridobi ga, nato klikni Preveri znova.',
+    setup_claude_none: 'Na tem Macu ni najdene nobene porabe Claude. Burnboard prikazuje porabo Claude Code in Cowork; klepeti na claude.ai na Macu ne pustijo zapisov o porabi. Če hočeš začeti s Claude Code, ga pridobi in klikni Preveri znova.',
+    setup_claude_optional: 'Claude Code ni na tem Macu, zato omejitve naročnine niso prikazane. Vse ostalo deluje.',
     setup_signed_in: 'Prijavljen kot {email}, naročnina {plan}.', setup_signed_in_plain: 'Prijavljen.',
     setup_not_signed: 'V Claude Code nihče ni prijavljen. Klikni gumb: Claude Code odpre Anthropicovo lastno stran za prijavo v brskalniku; Burnboard nikoli ne vidi tvojega gesla ali žetona. Nadzorna plošča deluje tudi brez prijave, omejitve naročnine pa jo potrebujejo.',
     setup_signin_unknown: 'Ni bilo mogoče prebrati, ali je Claude Code prijavljen. Če ni, se lahko prijaviš tukaj: Claude Code odpre Anthropicovo lastno stran za prijavo v brskalniku, Burnboard pa nikoli ne vidi tvojega gesla ali žetona. Omejitve naročnine jo potrebujejo.',
@@ -350,7 +352,7 @@ function signIn() {
   }).catch(function () { SETUP.sign = 'err_sign_in_failed'; renderSetup(); });
 }
 function agree() {
-  BRIDGE.postMessage({ cmd: 'consent', limitsCall: SETUP.limits }).then(function (s) {
+  BRIDGE.postMessage({ cmd: 'consent', limitsCall: SETUP.limits && !!((SETUP.st || {}).claude || {}).found }).then(function (s) {
     var r = JSON.parse(s);
     if (r.error) { SETUP.err = r.error; renderSetup(); } else { closeSetup(); startDash(); }
   }).catch(function () { SETUP.err = 'bridge'; renderSetup(); });
@@ -370,31 +372,33 @@ function renderSetup() {
   }
   function list(keys) { ul = el('ul'); keys.forEach(function (k) { item('', T(k)); }); box.appendChild(ul); }
   function button(key, alt, fn) { var b = el('button', 'l-btn' + (alt ? ' l-alt' : ''), T(key)); b.type = 'button'; b.addEventListener('click', fn); return b; }
+  var FOUND = 0; (st.sources || []).forEach(function (s) { if (s.found) FOUND += s.files || 0; });
   box.replaceChildren();
   box.classList.toggle('l-welcome', !SETUP.more);
   if (!SETUP.more) {
     // The short first-run screen: what it is, the two facts that matter, one switch, one button.
     // Everything else is one click away under "Show all details".
-    var n = 0; (st.sources || []).forEach(function (s) { if (s.found) n += s.files || 0; });
+    var n = FOUND;
     box.appendChild(el('h2', '', T('welcome_title')));
-    if (c.found) box.appendChild(el('p', '', n ? T('welcome_ready', { n: n }) : T('welcome_ready_plain')));
+    if (c.found || n) box.appendChild(el('p', '', n ? T('welcome_ready', { n: n }) : T('welcome_ready_plain')));
     ul = el('ul');
-    if (!c.found) item('bad', T('setup_claude_none'), ['btn_get_claude', 'openClaudeCodeSite']);
+    if (!c.found) { if (!n) item('bad', T('setup_claude_none'), ['btn_get_claude', 'openClaudeCodeSite']); }
     else if (c.loggedIn !== true) item('bad', T(c.loggedIn === false ? 'setup_not_signed' : 'setup_signin_unknown'), ['btn_sign_in', 'signIn']);
     item('l-muted', T('welcome_reads')); item('l-muted', T('welcome_local'));
     box.appendChild(ul);
     var wl = el('label'), wc = el('input');
     wc.type = 'checkbox'; wc.checked = SETUP.limits;
     wc.addEventListener('change', function () { SETUP.limits = wc.checked; });
-    wl.appendChild(wc); wl.appendChild(el('span', '', T('welcome_limits'))); box.appendChild(wl);
+    wl.appendChild(wc); wl.appendChild(el('span', '', T('welcome_limits')));
+    if (c.found) box.appendChild(wl);  // the limits come from Claude Code; without it there is nothing to switch
     if (SETUP.err) {
       var wm = T('err_' + SETUP.err);
       box.appendChild(el('p', 'l-err', wm !== 'err_' + SETUP.err ? wm : T('setup_error', { msg: SETUP.err })));
     }
     var wrow = el('div', 'l-row'), wgo = button('btn_agree_short', false, agree);
-    wgo.classList.add('l-big'); wgo.disabled = !c.found;
+    wgo.classList.add('l-big'); wgo.disabled = !c.found && !n;  // nothing to show only when there is neither Claude Code nor any log
     wrow.appendChild(wgo);
-    if (!c.found) wrow.appendChild(button('btn_check', true, function () {
+    if (!c.found && !n) wrow.appendChild(button('btn_check', true, function () {
       getStatus().then(function (s2) { SETUP.st = s2; SETUP.err = null; renderSetup(); }).catch(function () { SETUP.err = 'bridge'; renderSetup(); });
     }));
     wrow.appendChild(button('btn_details', true, function () { SETUP.more = true; renderSetup(); }));
@@ -407,7 +411,7 @@ function renderSetup() {
   box.appendChild(el('h3', '', T('setup_found')));
   ul = el('ul');
   item('ok', T('setup_python', { v: st.python }));
-  if (!c.found) item('bad', T('setup_claude_none'), ['btn_get_claude', 'openClaudeCodeSite']);
+  if (!c.found) { if (FOUND) item('', T('setup_claude_optional')); else item('bad', T('setup_claude_none'), ['btn_get_claude', 'openClaudeCodeSite']); }
   else {
     item('ok', T('setup_claude_ok', { v: c.version ? ' (' + c.version + ')' : '' }));
     if (c.loggedIn === true) item('ok', c.email && c.subscriptionType ? T('setup_signed_in', { email: c.email, plan: c.subscriptionType }) : T('setup_signed_in_plain'));
@@ -456,7 +460,7 @@ function renderSetup() {
   }
   row = el('div', 'l-row');
   var go = button('btn_agree', false, agree);
-  go.disabled = !c.found;  // nothing to show without Claude Code; being signed out does not block
+  go.disabled = !c.found && !FOUND;  // nothing to show only without Claude Code and without any log; being signed out does not block
   row.appendChild(go);
   box.appendChild(row);
 }

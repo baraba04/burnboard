@@ -13,6 +13,7 @@ import hashlib
 import json
 import os
 import re
+import shutil
 import signal
 import subprocess
 import sys
@@ -231,6 +232,9 @@ def start_limits(profile):
     # One minimal Haiku call; its stream reports the plan's rate-limit windows. The flags keep the context it
     # sends small: measured 11 Nov 2026 about 830 input tokens, and none of --safe-mode,
     # CLAUDE_CODE_DISABLE_CLAUDE_MDS or CLAUDE_CODE_DISABLE_AUTO_MEMORY made that smaller.
+    # Without Claude Code on this Mac (a person who only uses Cowork) there is no call: None.
+    if not shutil.which("claude", path=env(profile)["PATH"]):
+        return None
     cmd = ["claude", "-p", "Reply with the single word OK.", "--model", "haiku",
            "--output-format", "stream-json", "--verbose", "--no-session-persistence",
            "--strict-mcp-config", "--disable-slash-commands", "--tools", "",
@@ -311,7 +315,7 @@ def fresh(profile, limits_call=True):
             notes.append({"code": "limits_failed", "why": limits["error"]})
     else:
         limits = {"windows": []}
-        notes.append({"code": "limits_off"})
+        notes.append({"code": "limits_failed", "why": "no_claude"} if limits_call else {"code": "limits_off"})
     roots, groups = naming(load_config())
     srcs = read_roots(profile)
     out = B.build(prices, limits, os.path.join(cache_dir(profile), "parsed.pickle"),

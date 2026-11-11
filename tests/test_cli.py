@@ -626,6 +626,8 @@ def test_sign_in():
         os.environ["FAKE_CLAUDE_MODE"] = "ok"
         core.env = lambda profile=None: dict(real_env(profile), PATH=os.path.join(TMP.name, "empty-bin"))
         assert run("sign-in") == (1, {"error": "no_claude"})
+        # and the limits call is not started at all (a person with only Cowork sessions still gets a dashboard)
+        assert REAL_START_LIMITS(None) is None
     finally:
         core.env, cli.SIGN_IN_LIMIT = real_env, real_limit
         reset()
