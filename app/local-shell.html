@@ -53,6 +53,12 @@ body { margin: 0; padding: 0 max(16px, env(safe-area-inset-right, 0px)) 48px max
 .l-setup label { display: flex; align-items: flex-start; gap: 8px; }
 .l-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 8px; }
 .l-btn.l-alt { color: var(--color-fg); background: transparent; border: 1px solid var(--color-border-line); }
+.l-welcome { max-width: 520px; margin: 8vh auto 0; text-align: center; }
+.l-welcome h2 { margin-bottom: 12px; }
+.l-welcome ul { list-style: none; padding: 0; margin: 20px 0; }
+.l-welcome label { justify-content: center; text-align: left; margin: 20px 0; }
+.l-welcome .l-row { justify-content: center; flex-direction: column; align-items: center; gap: 12px; }
+.l-welcome .l-big { font-size: 1.15em; padding: 14px 34px; }
 .setup-on .l-setup { display: block; }
 .setup-on #dash-root, .setup-on #l-notes, .setup-on .l-foot, .setup-on #l-refresh, .setup-on #l-status, .setup-on #l-setup-btn { display: none; }
 .l-foot { max-width: 1100px; margin: 32px auto 0; color: var(--color-fg-muted); font-size: 12px; line-height: 1.5; }
@@ -70,6 +76,11 @@ var I18N = {
     note_limits_off: 'Plan limits were not read because that call is switched off in Setup.',
     btn_setup: 'Setup', btn_check: 'Check again', btn_add_folder: 'Add another Claude folder …', btn_remove_folder: 'Remove this folder from the list', btn_agree: 'Agree and open the dashboard',
     btn_get_claude: 'Get Claude Code', btn_sign_in: 'Sign in to Claude Code',
+    welcome_title: 'Welcome to Burnboard', welcome_ready: 'Everything is ready. Found {n} log files of your Claude usage on this Mac.', welcome_ready_plain: 'Everything is ready.',
+    welcome_reads: 'Burnboard reads your Claude logs on this Mac and shows what they would cost.',
+    welcome_local: 'Nothing from your logs is sent anywhere. The only download is a public price list.',
+    welcome_limits: 'Also show my plan limits (one small call on my own Claude subscription per refresh)',
+    btn_details: 'Show all details', btn_agree_short: 'Agree and open',
     setup_title: 'Set up Burnboard', setup_intro: 'Read what the app finds and what it does, then agree to open the dashboard.',
     setup_found: 'What was found', setup_python: 'Python {v}.',
     setup_claude_ok: 'Claude Code found{v}.',
@@ -151,6 +162,11 @@ var I18N = {
     note_limits_off: 'Omejitve niso bile prebrane, ker je ta klic izklopljen v nastavitvi.',
     btn_setup: 'Nastavitev', btn_check: 'Preveri znova', btn_add_folder: 'Dodaj drugo mapo Claude …', btn_remove_folder: 'Odstrani to mapo s seznama', btn_agree: 'Soglašam, odpri nadzorno ploščo',
     btn_get_claude: 'Pridobi Claude Code', btn_sign_in: 'Prijava v Claude Code',
+    welcome_title: 'Dobrodošel v Burnboard', welcome_ready: 'Vse je pripravljeno. Na tem Macu je najdenih {n} dnevnikov tvoje uporabe Claude.', welcome_ready_plain: 'Vse je pripravljeno.',
+    welcome_reads: 'Burnboard bere tvoje dnevnike Claude na tem Macu in pokaže, koliko bi stali.',
+    welcome_local: 'Nič iz tvojih dnevnikov se nikamor ne pošilja. Edini prenos je javni cenik.',
+    welcome_limits: 'Pokaži tudi omejitve moje naročnine (en majhen klic prek moje naročnine Claude ob vsaki osvežitvi)',
+    btn_details: 'Pokaži vse podrobnosti', btn_agree_short: 'Soglašam in odpri',
     setup_title: 'Nastavitev Burnboard', setup_intro: 'Preberi, kaj aplikacija najde in kaj dela, nato potrdi, da se odpre nadzorna plošča.',
     setup_found: 'Kaj je najdeno', setup_python: 'Python {v}.',
     setup_claude_ok: 'Claude Code je najden{v}.',
@@ -296,11 +312,12 @@ function loadFresh() {
 // stores consent and profiles. Under the development server there is no bridge and none of this shows.
 var BRIDGE = (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.usage) || null;
 var HDR = { 'X-Usage-Claude': '1' };
-var SETUP = { st: null, limits: true, err: null, sign: null };
+var SETUP = { st: null, limits: true, err: null, sign: null, more: false };
 function getStatus() { return fetch('/status.json', { headers: HDR }).then(function (r) { return r.json(); }); }
 function el(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
 function showSetup(st) {
   SETUP.st = st; SETUP.err = null; SETUP.sign = null;
+  SETUP.more = !!(st.consent && st.consent.given);  // first run: the short welcome; reopened from the Setup button: everything
   SETUP.limits = st.consent && typeof st.consent.limits_call === 'boolean' ? st.consent.limits_call : true;
   document.body.classList.add('setup-on'); renderSetup();
 }
@@ -354,6 +371,36 @@ function renderSetup() {
   function list(keys) { ul = el('ul'); keys.forEach(function (k) { item('', T(k)); }); box.appendChild(ul); }
   function button(key, alt, fn) { var b = el('button', 'l-btn' + (alt ? ' l-alt' : ''), T(key)); b.type = 'button'; b.addEventListener('click', fn); return b; }
   box.replaceChildren();
+  box.classList.toggle('l-welcome', !SETUP.more);
+  if (!SETUP.more) {
+    // The short first-run screen: what it is, the two facts that matter, one switch, one button.
+    // Everything else is one click away under "Show all details".
+    var n = 0; (st.sources || []).forEach(function (s) { if (s.found) n += s.files || 0; });
+    box.appendChild(el('h2', '', T('welcome_title')));
+    if (c.found) box.appendChild(el('p', '', n ? T('welcome_ready', { n: n }) : T('welcome_ready_plain')));
+    ul = el('ul');
+    if (!c.found) item('bad', T('setup_claude_none'), ['btn_get_claude', 'openClaudeCodeSite']);
+    else if (c.loggedIn !== true) item('bad', T(c.loggedIn === false ? 'setup_not_signed' : 'setup_signin_unknown'), ['btn_sign_in', 'signIn']);
+    item('l-muted', T('welcome_reads')); item('l-muted', T('welcome_local'));
+    box.appendChild(ul);
+    var wl = el('label'), wc = el('input');
+    wc.type = 'checkbox'; wc.checked = SETUP.limits;
+    wc.addEventListener('change', function () { SETUP.limits = wc.checked; });
+    wl.appendChild(wc); wl.appendChild(el('span', '', T('welcome_limits'))); box.appendChild(wl);
+    if (SETUP.err) {
+      var wm = T('err_' + SETUP.err);
+      box.appendChild(el('p', 'l-err', wm !== 'err_' + SETUP.err ? wm : T('setup_error', { msg: SETUP.err })));
+    }
+    var wrow = el('div', 'l-row'), wgo = button('btn_agree_short', false, agree);
+    wgo.classList.add('l-big'); wgo.disabled = !c.found;
+    wrow.appendChild(wgo);
+    if (!c.found) wrow.appendChild(button('btn_check', true, function () {
+      getStatus().then(function (s2) { SETUP.st = s2; SETUP.err = null; renderSetup(); }).catch(function () { SETUP.err = 'bridge'; renderSetup(); });
+    }));
+    wrow.appendChild(button('btn_details', true, function () { SETUP.more = true; renderSetup(); }));
+    box.appendChild(wrow);
+    return;
+  }
   box.appendChild(el('h2', '', T('setup_title')));
   box.appendChild(el('p', 'l-muted', T('setup_intro')));
 
