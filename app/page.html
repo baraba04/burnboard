@@ -1,0 +1,894 @@
+<style>
+.u-wrap { display: flex; flex-direction: column; gap: var(--cds-gap-xl); max-width: 1100px; margin: 0 auto; font-family: var(--font-anthropic-sans); color: var(--color-fg); }
+.u-head { display: flex; flex-wrap: wrap; gap: var(--cds-gap-md); align-items: flex-end; justify-content: space-between; }
+.u-head h1 { margin: 0; font-family: var(--font-anthropic-serif); font-weight: 400; font-size: var(--cds-font-size-title); }
+.u-head p { margin: var(--cds-gap-xs) 0 0; color: var(--color-fg-muted); font-size: var(--cds-font-size-body); max-width: 62ch; line-height: 1.5; }
+.u-head p b { color: var(--color-fg); font-weight: var(--cds-font-weight-medium); }
+.u-snap { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); margin-top: var(--cds-gap-xs); }
+.u-ctrl { display: flex; flex-wrap: wrap; gap: var(--cds-gap-sm); }
+.u-seg { display: inline-flex; padding: 3px; gap: 2px; border: 1px solid var(--color-border-line); border-radius: var(--cds-radius); background: var(--color-panel); }
+.u-seg button { font: inherit; font-size: var(--cds-font-size-body); color: var(--color-fg-muted); background: transparent; border: 0; border-radius: calc(var(--cds-radius) - 2px); padding: 6px 12px; cursor: pointer; white-space: nowrap; }
+.u-seg button:hover { color: var(--color-fg); }
+.u-seg button.on { background: var(--color-bg); color: var(--color-fg); box-shadow: 0 0 0 1px var(--color-border-line); }
+.u-seg button:focus-visible { outline: 2px solid var(--color-fg); outline-offset: 1px; }
+.u-h { margin: 0 0 var(--cds-gap-md); font-size: var(--cds-font-size-heading); font-weight: var(--cds-font-weight-medium); }
+.u-hint { font-weight: 400; color: var(--color-fg-muted); font-size: var(--cds-font-size-caption); margin-left: 6px; }
+
+.u-limits { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: var(--cds-gap-lg); padding: var(--cds-pad-lg); background: var(--color-panel); border: 1px solid var(--color-border-line); border-radius: var(--cds-radius); }
+.u-lim-top { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; font-size: var(--cds-font-size-body); }
+.u-lim-top b { font-variant-numeric: tabular-nums; font-weight: var(--cds-font-weight-medium); font-size: var(--cds-font-size-heading); }
+.u-meter { height: 6px; border-radius: 3px; background: var(--color-border-line); overflow: hidden; margin: 8px 0 6px; }
+.u-meter span { display: block; height: 100%; border-radius: 3px; }
+.u-lim-sub { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); line-height: 1.5; }
+.u-lim-sub b { color: var(--color-fg); font-weight: var(--cds-font-weight-medium); font-variant-numeric: tabular-nums; }
+
+.u-top { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 2.4fr); gap: var(--cds-gap-xl); }
+@media (max-width: 720px) { .u-top { grid-template-columns: minmax(0, 1fr); } }
+.u-big { font-family: var(--font-anthropic-serif); font-weight: 400; font-size: 56px; line-height: 1; font-variant-numeric: tabular-nums; }
+.u-sub { color: var(--color-fg-muted); font-size: var(--cds-font-size-body); margin-top: var(--cds-gap-xs); }
+.u-delta { margin-top: var(--cds-gap-sm); font-size: var(--cds-font-size-body); color: var(--color-fg-muted); font-variant-numeric: tabular-nums; }
+.u-delta b { color: var(--color-fg); font-weight: var(--cds-font-weight-medium); }
+.u-mini { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--cds-gap-md); margin-top: var(--cds-gap-lg); }
+.u-lab { color: var(--color-fg-muted); font-size: var(--cds-font-size-body); }
+.u-mini .u-val { font-size: var(--cds-font-size-heading); }
+.u-val { margin-top: 4px; font-size: var(--cds-font-size-title); font-variant-numeric: tabular-nums; font-weight: var(--cds-font-weight-medium); }
+.u-chart { position: relative; min-height: 260px; }
+.u-chart svg { display: block; }
+.u-chart text { fill: var(--cds-text-secondary); font-size: 11px; font-variant-numeric: tabular-nums; }
+.u-tip { position: absolute; pointer-events: none; z-index: 2; padding: 8px 10px; background: var(--cds-surface-popover); border: 1px solid var(--cds-border); box-shadow: var(--cds-shadow-popover); border-radius: var(--cds-radius); font-size: 12px; color: var(--cds-text-secondary); white-space: nowrap; }
+.u-tip b { color: var(--color-fg); font-weight: var(--cds-font-weight-medium); }
+.u-tip i, .u-legend i { display: inline-block; width: 9px; height: 9px; border-radius: 2px; margin-right: 6px; }
+.u-totals { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: var(--cds-gap-lg); }
+.u-bar { display: flex; height: 10px; gap: 2px; border-radius: 5px; overflow: hidden; }
+.u-bar span { display: block; min-width: 3px; }
+.u-legend { display: flex; flex-wrap: wrap; gap: var(--cds-gap-sm) var(--cds-gap-lg); margin-top: var(--cds-gap-md); font-size: var(--cds-font-size-body); color: var(--color-fg-muted); }
+.u-legend b { color: var(--color-fg); font-weight: var(--cds-font-weight-medium); font-variant-numeric: tabular-nums; margin-left: 4px; }
+.u-two { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--cds-gap-xl); }
+@media (max-width: 860px) { .u-two { grid-template-columns: minmax(0, 1fr); } }
+.u-scroll { overflow-x: auto; }
+.u-table { width: 100%; border-collapse: collapse; font-size: var(--cds-font-size-body); }
+.u-table th { text-align: right; font-weight: 400; color: var(--color-fg-muted); padding: 8px 10px; border-bottom: 1px solid var(--color-border-line); white-space: nowrap; }
+.u-table th:first-child, .u-table td:first-child { text-align: left; padding-left: 0; }
+.u-table td { padding: 11px 10px; text-align: right; border-bottom: 1px solid var(--color-border-line); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.u-table td.u-wrapcell { white-space: normal; min-width: 180px; max-width: 360px; overflow-wrap: anywhere; }
+.u-table th.u-left, .u-table td.u-left { text-align: left; }
+.u-table td small { display: block; color: var(--color-fg-muted); font-size: var(--cds-font-size-caption); }
+.u-model { display: flex; flex-direction: column; gap: 5px; min-width: 150px; }
+.u-model i { display: block; height: 2px; border-radius: 1px; min-width: 2px; }
+.u-table tr.u-click { cursor: pointer; }
+.u-table tr.u-click:hover td { background: var(--color-panel); }
+.u-table tr.u-click:focus-visible { outline: 2px solid var(--color-fg); outline-offset: -2px; }
+.u-table tr.sel td { background: var(--color-panel); }
+.u-table tr.sel td:first-child span { font-weight: var(--cds-font-weight-medium); }
+.u-table tr.dim td { opacity: .45; }
+.u-filters { display: flex; flex-wrap: wrap; gap: var(--cds-gap-sm); align-items: center; font-size: var(--cds-font-size-body); color: var(--color-fg-muted); }
+.u-chip { font: inherit; color: var(--color-fg); background: var(--color-panel); border: 1px solid var(--color-border-line); border-radius: 999px; padding: 4px 10px; cursor: pointer; }
+.u-chip:hover { border-color: var(--color-fg-muted); }
+.u-chip:focus-visible { outline: 2px solid var(--color-fg); outline-offset: 1px; }
+.u-chip.clear { background: transparent; color: var(--color-fg-muted); }
+.u-week { margin-top: var(--cds-gap-lg); }
+.u-week h3 { margin: 0 0 var(--cds-gap-sm); font-size: var(--cds-font-size-body); font-weight: var(--cds-font-weight-medium); }
+.u-weekchart { position: relative; min-height: 190px; }
+.u-weekchart svg { display: block; }
+.u-weekchart text { fill: var(--cds-text-secondary); font-size: 11px; font-variant-numeric: tabular-nums; }
+.u-legend i.line { height: 2px; border-radius: 1px; width: 14px; vertical-align: middle; }
+.u-legend i.dot { border-radius: 50%; }
+.u-heat svg, .u-ctx svg { display: block; width: 100%; height: auto; }
+.u-heat text, .u-ctx text { fill: var(--cds-text-secondary); font-size: 11px; font-variant-numeric: tabular-nums; }
+.u-ctx { margin-top: var(--cds-gap-lg); }
+.u-ctx h3 { margin: 0 0 var(--cds-gap-sm); font-size: var(--cds-font-size-body); font-weight: var(--cds-font-weight-medium); overflow-wrap: anywhere; }
+.u-spark { display: flex; align-items: flex-end; gap: 1px; height: 44px; margin-bottom: var(--cds-gap-sm); border-bottom: 1px solid var(--color-border-line); }
+.u-spark span { flex: 1 1 0; background: var(--color-warn); border-radius: 1px 1px 0 0; }
+.u-smallnote { margin-top: var(--cds-gap-sm); font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); }
+</style>
+
+<div class="u-wrap">
+  <header class="u-head">
+    <div>
+      <h1>Burnboard</h1>
+      <p data-draw="lead">—</p>
+      <div class="u-snap" data-draw="snap">—</div>
+    </div>
+    <div class="u-ctrl">
+      <div class="u-seg" role="group" data-i18n-aria="aria_period">
+        <button type="button" data-range="24h" data-i18n="r_24h"></button>
+        <button type="button" data-range="7" data-i18n="r_7"></button>
+        <button type="button" data-range="30" data-i18n="r_30"></button>
+        <button type="button" data-range="all" data-i18n="r_all"></button>
+      </div>
+      <div class="u-seg" role="group" data-i18n-aria="aria_metric">
+        <button type="button" data-metric="cost" data-i18n="m_cost"></button>
+        <button type="button" data-metric="tokens" data-i18n="m_tokens"></button>
+      </div>
+      <div class="u-seg"><button type="button" data-export data-i18n="btn_csv"></button></div>
+    </div>
+  </header>
+
+  <div class="u-filters" data-draw="filters"></div>
+
+  <section id="limits">
+    <h2 class="u-h"><span data-i18n="h_limits"></span> <span class="u-hint" data-i18n="h_limits_hint"></span></h2>
+    <div class="u-limits" data-draw="limits"></div>
+    <div class="u-week">
+      <h3 data-i18n="h_week"></h3>
+      <div class="u-weekchart" data-draw="weekchart">—</div>
+      <div class="u-legend" data-draw="weeklegend"></div>
+    </div>
+    <div class="u-week">
+      <h3><span data-i18n="h_qweeks"></span> <span class="u-hint" data-i18n="h_qweeks_hint"></span></h3>
+      <div class="u-scroll">
+        <table class="u-table">
+          <thead><tr><th data-i18n="th_week"></th><th data-i18n="th_cost"></th><th data-i18n="th_tokens"></th><th data-i18n="th_limit_used"></th></tr></thead>
+          <tbody data-draw="qweeks"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section class="u-top" id="overview">
+    <div>
+      <div class="u-big" data-draw="big">—</div>
+      <div class="u-sub" data-draw="biglabel">—</div>
+      <div class="u-delta" data-draw="delta">—</div>
+      <div class="u-mini">
+        <div><div class="u-lab" data-i18n="sessions"></div><div class="u-val" data-draw="n_sess">—</div></div>
+        <div><div class="u-lab" data-i18n="calls"></div><div class="u-val" data-draw="n_msgs">—</div></div>
+        <div><div class="u-lab" data-draw="avg_label">—</div><div class="u-val" data-draw="avg">—</div></div>
+        <div><div class="u-lab" data-draw="peak_label">—</div><div class="u-val" data-draw="peak">—</div></div>
+      </div>
+    </div>
+    <div>
+      <h2 class="u-h" data-draw="charttitle">—</h2>
+      <div class="u-chart" data-draw="chart">—</div>
+      <div class="u-legend" data-draw="chartlegend"></div>
+    </div>
+  </section>
+
+  <section id="totals">
+    <h2 class="u-h" data-i18n="h_totals"></h2>
+    <div class="u-totals">
+      <div><div class="u-lab" data-i18n="tot_all"></div><div class="u-val" data-draw="t_all">—</div></div>
+      <div><div class="u-lab" data-i18n="tot_read"></div><div class="u-val" data-draw="t_read">—</div></div>
+      <div><div class="u-lab" data-i18n="tot_unc"></div><div class="u-val" data-draw="t_unc">—</div></div>
+      <div><div class="u-lab" data-i18n="tot_out"></div><div class="u-val" data-draw="t_out">—</div></div>
+      <div><div class="u-lab" data-i18n="tot_cost"></div><div class="u-val" data-draw="t_cost">—</div></div>
+      <div><div class="u-lab" data-i18n="tot_saved"></div><div class="u-val" data-draw="t_saved">—</div></div>
+    </div>
+  </section>
+
+  <section id="types">
+    <h2 class="u-h" data-i18n="h_types"></h2>
+    <div class="u-bar" data-draw="typebar"></div>
+    <div class="u-legend" data-draw="typelegend"></div>
+  </section>
+
+  <div class="u-two">
+    <section id="models">
+      <h2 class="u-h" data-i18n="h_models"></h2>
+      <div class="u-scroll">
+        <table class="u-table">
+          <thead><tr><th data-i18n="th_model"></th><th data-i18n="th_cost"></th><th data-i18n="th_share"></th><th data-i18n="th_tokens"></th></tr></thead>
+          <tbody data-draw="models"></tbody>
+        </table>
+      </div>
+    </section>
+    <section id="projects">
+      <h2 class="u-h" data-i18n="h_projects"></h2>
+      <div class="u-scroll">
+        <table class="u-table">
+          <thead><tr><th data-i18n="th_project"></th><th data-i18n="th_cost"></th><th data-i18n="th_share"></th><th data-i18n="th_tokens"></th></tr></thead>
+          <tbody data-draw="projects"></tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+
+  <div class="u-two">
+    <section id="agents">
+      <h2 class="u-h" data-i18n="h_agents"></h2>
+      <div class="u-scroll">
+        <table class="u-table">
+          <thead><tr><th data-i18n="th_agent"></th><th data-i18n="th_cost"></th><th data-i18n="th_share"></th><th data-i18n="th_tokens"></th></tr></thead>
+          <tbody data-draw="agents"></tbody>
+        </table>
+      </div>
+    </section>
+    <section id="efforts">
+      <h2 class="u-h" data-i18n="h_efforts"></h2>
+      <div class="u-scroll">
+        <table class="u-table">
+          <thead><tr><th data-i18n="th_effort"></th><th data-i18n="th_cost"></th><th data-i18n="th_share"></th><th data-i18n="th_tokens"></th></tr></thead>
+          <tbody data-draw="efforts"></tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+
+  <div class="u-two">
+    <section id="vias">
+      <h2 class="u-h"><span data-i18n="h_via"></span> <span class="u-hint" data-i18n="h_via_hint"></span></h2>
+      <div class="u-scroll">
+        <table class="u-table">
+          <thead><tr><th data-i18n="th_via"></th><th data-i18n="th_cost"></th><th data-i18n="th_share"></th><th data-i18n="th_tokens"></th></tr></thead>
+          <tbody data-draw="vias"></tbody>
+        </table>
+      </div>
+    </section>
+    <section id="errors">
+      <h2 class="u-h"><span data-i18n="h_errors"></span> <span class="u-hint" data-i18n="h_errors_hint"></span></h2>
+      <div class="u-spark u-box" data-draw="errspark"></div>
+      <div class="u-scroll">
+        <table class="u-table">
+          <thead><tr><th data-i18n="th_kind"></th><th data-i18n="th_count"></th><th data-i18n="th_lastseen"></th></tr></thead>
+          <tbody data-draw="errors"></tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+
+  <section id="heat">
+    <h2 class="u-h"><span data-i18n="h_heat"></span> <span class="u-hint" data-i18n="h_heat_hint"></span></h2>
+    <div class="u-heat u-box" data-draw="heat"></div>
+  </section>
+
+  <section id="subagents">
+    <h2 class="u-h"><span data-i18n="h_sub"></span> <span class="u-hint" data-i18n="h_sub_hint"></span></h2>
+    <div class="u-bar" data-draw="subbar"></div>
+    <div class="u-legend" data-draw="sublegend"></div>
+  </section>
+
+  <section id="sessions">
+    <h2 class="u-h"><span data-i18n="h_sessions"></span> <span class="u-hint" data-i18n="h_sessions_hint"></span></h2>
+    <div class="u-scroll">
+      <table class="u-table">
+        <thead><tr><th data-i18n="th_session"></th><th data-i18n="th_project"></th><th data-i18n="th_last"></th><th data-i18n="th_cost"></th><th data-i18n="th_tokens"></th></tr></thead>
+        <tbody data-draw="sessions"></tbody>
+      </table>
+    </div>
+    <div class="u-smallnote" data-draw="sessnote"></div>
+    <div class="u-ctx u-box" data-draw="ctx"></div>
+    <div class="u-smallnote" data-draw="compnote"></div>
+  </section>
+
+  <section id="calls">
+    <h2 class="u-h"><span data-i18n="h_calls"></span> <span class="u-hint" data-i18n="h_calls_hint"></span></h2>
+    <div class="u-scroll">
+      <table class="u-table">
+        <thead><tr><th data-i18n="th_time"></th><th class="u-left" data-i18n="th_session"></th><th data-i18n="th_model"></th><th data-i18n="th_context"></th><th data-i18n="th_output"></th><th data-i18n="th_cost"></th></tr></thead>
+        <tbody data-draw="calls"></tbody>
+      </table>
+    </div>
+    <div class="u-smallnote" data-draw="callnote"></div>
+  </section>
+</div>
+
+<script>
+function rowsFrom(answer, rowsKey, colsKey) {
+  var cols = answer[colsKey];
+  return answer[rowsKey].map(function (r) { var o = {}; for (var i = 0; i < cols.length; i++) o[cols[i]] = r[i]; return o; });
+}
+dash.loader('usage', { fn: function (a) { return rowsFrom(a.answer, 'facts', 'fact_cols'); } });
+dash.loader('sessions', { fn: function (a) { return rowsFrom(a.answer, 'sessions', 'session_cols').map(function (r, i) { r.s = i; return r; }); } });
+dash.loader('session_use', { fn: function (a) {
+  var d = rowsFrom(a.answer, 'sess_days', 'sess_day_cols').map(function (r) { return { s: r.s, g: 'd', t: r.day, cost: r.cost, tokens: r.tokens }; });
+  var h = rowsFrom(a.answer, 'sess_hours', 'sess_hour_cols').map(function (r) { return { s: r.s, g: 'h', t: r.hour, cost: r.cost, tokens: r.tokens }; });
+  return d.concat(h);
+} });
+dash.loader('limit_history', { fn: function (a) { return a.answer.limit_history ? rowsFrom(a.answer, 'limit_history', 'limit_history_cols') : []; } });
+function optRows(a, rowsKey, colsKey) { return a.answer[rowsKey] ? rowsFrom(a.answer, rowsKey, colsKey) : []; }
+dash.loader('calls', { fn: function (a) { return optRows(a, 'calls', 'call_cols'); } });
+dash.loader('compactions', { fn: function (a) { return optRows(a, 'compactions', 'compaction_cols'); } });
+dash.loader('errors', { fn: function (a) { return optRows(a, 'errors', 'error_cols'); } });
+dash.loader('via_hint', { fn: function (a) { return a.answer.via_hint || {}; } });
+dash.loader('sess_ctx', { fn: function (a) { return a.answer.sess_ctx || {}; } });
+dash.loader('status', { fn: function (a) {
+  var m = a.answer.meta[0], lim = a.answer.limits.length ? a.answer.limits : [{ key: null, percentUsed: null, resetsAt: null }];
+  return lim.map(function (l) { return { key: l.key, percentUsed: l.percentUsed, resetsAt: l.resetsAt, generated_at: m.generated_at, first_hour: m.first_hour, restored: (m.check && m.check.restored) || [] }; });
+} });
+
+(function () {
+  var DIMS = ['project', 'model', 'agent', 'effort', 'via'];
+  var state = { range: '24h', metric: 'cost', session: null, filter: { project: null, model: null, agent: null, effort: null, via: null } };
+  var t = APP.t;
+  var LOC = {
+    en: { num: d3.formatLocale({ decimal: '.', thousands: ',', grouping: [3], currency: ['$', ''] }), units: [' B', ' M', ' K'], pct: '%',
+          day: d3.timeFormat('%b %-d'), dayY: d3.timeFormat('%b %-d, %Y'), dt: d3.timeFormat('%b %-d, %H:%M') },
+    sl: { num: d3.formatLocale({ decimal: ',', thousands: '.', grouping: [3], currency: ['$', ''] }), units: [' mrd', ' mio', ' tis.'], pct: ' %',
+          day: d3.timeFormat('%-d. %-m.'), dayY: d3.timeFormat('%-d. %-m. %Y'), dt: d3.timeFormat('%-d. %-m. %H:%M') }
+  };
+  function L() { return LOC[APP.lang] || LOC.en; }
+  var dayKey = d3.timeFormat('%Y-%m-%d'), fHour = d3.timeFormat('%H:00');
+  function fDay(d) { return L().day(d); }
+  function fDayY(d) { return L().dayY(d); }
+  function fDT(d) { return L().dt(d); }
+  var memo = {};
+
+  function fmtTok(n) {
+    var u = L().units, f = L().num;
+    if (n >= 1e9) return f.format(',.2f')(n / 1e9) + u[0];
+    if (n >= 1e6) return f.format(',.1f')(n / 1e6) + u[1];
+    if (n >= 1e3) return f.format(',.0f')(n / 1e3) + u[2];
+    return String(Math.round(n));
+  }
+  function fmtCost(c) { return L().num.format('$,.2f')(c); }
+  function fmtCost0(c) { return L().num.format('$,.0f')(c); }
+  function fmtInt(n) { return L().num.format(',d')(Math.round(n)); }
+  function fmtPct(p) { return (p < 0.1 && p > 0 ? '<' + L().num.format('.1f')(0.1) : L().num.format('.1f')(p)) + L().pct; }
+  function fmtPct0(p) { return L().num.format('.0f')(p) + L().pct; }
+  function fmtVal(n) { return state.metric === 'cost' ? fmtCost(n) : fmtTok(n); }
+  function mval(r) { return state.metric === 'cost' ? r.cost : r.tokens; }
+  function el(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+  // Fill `e` from a translated template; {name} parts become bold values.
+  function rich(e, key, parts, append) {
+    if (!append) e.replaceChildren();
+    t(key).split(/(\{\w+\})/).forEach(function (seg) {
+      var m = /^\{(\w+)\}$/.exec(seg);
+      if (m) e.appendChild(el('b', null, parts[m[1]])); else if (seg) e.appendChild(document.createTextNode(seg));
+    });
+  }
+  function dur(ms) {
+    var h = Math.floor(ms / 36e5), m = Math.round((ms % 36e5) / 6e4);
+    if (h >= 48) return Math.floor(h / 24) + ' d ' + (h % 24) + ' h';
+    return h > 0 ? h + ' h ' + m + ' min' : m + ' min';
+  }
+
+  function base() {
+    var g = dash.data('usage'), st = dash.data('status');
+    if (g.status !== 'ok' || st.status !== 'ok' || !st.data.length) return null;
+    if (memo.src === g.data && memo.st === st.data) return memo.base;
+    var rows = g.data.map(function (r) {
+      return { hour: new Date(r.hour), model: r.model, project: r.project, sub: +r.sub, agent: r.agent || 'main', effort: r.effort || '', via: r.via || '', input: +r.input, output: +r.output, cache_write: +r.cache_write, cache_read: +r.cache_read, cost: +r.cost, saved: +r.saved, msgs: +r.msgs, tokens: (+r.input) + (+r.output) + (+r.cache_write) + (+r.cache_read) };
+    });
+    var rank = d3.rollups(rows, function (rs) { return d3.sum(rs, function (r) { return r.cost; }); }, function (r) { return r.model; })
+      .sort(function (a, b) { return b[1] - a[1]; }).map(function (x) { return x[0]; });
+    var colorOf = {};
+    rank.forEach(function (m, i) { colorOf[m] = i < dash.colors.length ? dash.colors[i] : 'var(--cds-chart-muted)'; });
+    var m0 = st.data[0];
+    state.session = null;  // session numbers belong to one snapshot
+    memo = { src: g.data, st: st.data, views: {}, base: { rows: rows, now: new Date(m0.generated_at), first: new Date(m0.first_hour), limits: st.data.filter(function (l) { return l.key; }), colorOf: colorOf, restored: new Set(m0.restored || []) } };
+    return memo.base;
+  }
+  function sums(rows) {
+    var s = { tokens: 0, cost: 0, input: 0, output: 0, cache_write: 0, cache_read: 0, saved: 0, msgs: 0 };
+    rows.forEach(function (r) { for (var k in s) s[k] += r[k]; });
+    return s;
+  }
+  function group(rows, key) {
+    return d3.rollups(rows, function (rs) { return { tokens: d3.sum(rs, function (r) { return r.tokens; }), cost: d3.sum(rs, function (r) { return r.cost; }) }; }, key)
+      .map(function (x) { return { name: x[0], tokens: x[1].tokens, cost: x[1].cost }; }).sort(function (a, b) { return b.cost - a.cost; });
+  }
+  function filterKey() { return DIMS.map(function (d) { return state.filter[d] == null ? '' : state.filter[d]; }).join('\u0001'); }
+  function anyFilter() { return DIMS.some(function (d) { return state.filter[d] != null; }); }
+  // Rows that pass every active filter, optionally ignoring one dimension (so its own table keeps all its rows).
+  function passing(rows, except) {
+    var act = DIMS.filter(function (d) { return d !== except && state.filter[d] != null; });
+    if (!act.length) return rows;
+    return rows.filter(function (r) { for (var i = 0; i < act.length; i++) if (r[act[i]] !== state.filter[act[i]]) return false; return true; });
+  }
+  function view() {
+    var b = base();
+    if (!b) return null;
+    var ck = state.range + '\u0002' + filterKey();
+    if (memo.views[ck]) return memo.views[ck];
+    var hourly = state.range === '24h', start, buckets, prevStart = null, today = d3.timeDay.floor(b.now);
+    if (hourly) {
+      var last = d3.utcHour.floor(b.now);
+      start = d3.utcHour.offset(last, -23);
+      buckets = d3.utcHours(start, d3.utcHour.offset(last, 1));
+      prevStart = d3.utcHour.offset(start, -24);
+    } else {
+      var n = state.range === 'all' ? null : +state.range;
+      start = n ? d3.timeDay.offset(today, -(n - 1)) : d3.timeDay.floor(b.first);
+      buckets = d3.timeDays(start, d3.timeDay.offset(today, 1));
+      if (n) prevStart = d3.timeDay.offset(start, -n);
+    }
+    var inRange = b.rows.filter(function (r) { return r.hour >= start; });
+    var rows = passing(inRange);
+    var prev = null;
+    if (prevStart && b.first <= prevStart) prev = sums(passing(b.rows.filter(function (r) { return r.hour >= prevStart && r.hour < start; })));
+    var bkey = hourly ? function (d) { return +d; } : function (d) { return dayKey(d); };
+    var v = { b: b, hourly: hourly, start: start, buckets: buckets, bkey: bkey, rows: rows, tot: sums(rows), prev: prev, by: {},
+      bySub: group(rows, function (r) { return r.sub; }) };
+    DIMS.forEach(function (d) { v.by[d] = group(passing(inRange, d), function (r) { return r[d]; }); });
+    v.byModel = group(rows, function (r) { return r.model; });
+    v.byProject = group(rows, function (r) { return r.project; });
+    memo.views[ck] = v;
+    return v;
+  }
+  function sessView(v) {
+    var u = dash.data('session_use'), s = dash.data('sessions');
+    if (u.status !== 'ok' || s.status !== 'ok') return null;
+    var startKey = dayKey(v.start);
+    var use = u.data.filter(function (r) { return v.hourly ? (r.g === 'h' && new Date(r.t) >= v.start) : (r.g === 'd' && r.t >= startKey); });
+    return d3.rollups(use, function (rs) { return { cost: d3.sum(rs, function (r) { return +r.cost; }), tokens: d3.sum(rs, function (r) { return +r.tokens; }) }; }, function (r) { return +r.s; })
+      .map(function (x) { return { s: x[0], cost: x[1].cost, tokens: x[1].tokens, info: s.data[x[0]] }; })
+      .filter(function (x) { return state.filter.project == null || (x.info && x.info.project === state.filter.project); })
+      .sort(function (a, b) { return b.cost - a.cost; });
+  }
+
+  var NAMES = [];
+  function R(name, fn) {
+    NAMES.push(name);
+    dash.draw(name, function (e) {
+      var v = view();
+      var container = e.tagName === 'TBODY' || e.classList.contains('u-bar') || e.classList.contains('u-legend') || e.classList.contains('u-limits') || e.classList.contains('u-filters') || e.classList.contains('u-smallnote') || e.classList.contains('u-box');
+      if (!v) { if (container) e.replaceChildren(); else e.textContent = '—'; return; }
+      fn(e, v);
+    });
+  }
+  function redrawAll() { NAMES.forEach(function (n) { dash.draw(n); }); dash.draw('chart'); dash.draw('weekchart'); }
+  function dimLabel(dim, name) {
+    if (dim === 'agent') return name === 'main' ? t('agent_main') : name === 'unknown' ? t('agent_unknown') : name;
+    if (dim === 'effort') return name === '' ? t('effort_none') : name;
+    if (dim === 'via') {
+      if (name === '') return t('via_none');
+      var i = name.indexOf(':');
+      var hint = (dash.data('via_hint').data || {})[name], id = name.slice(i + 1);
+      return (name.slice(0, i) === 'mcp' ? 'MCP' : t('via_skill')) + ': ' + (hint ? id.slice(0, 8) + ' (' + hint + ')' : id);
+    }
+    return name;
+  }
+  function setFilter(dim, name) { state.filter[dim] = state.filter[dim] === name ? null : name; redrawAll(); }
+  R('filters', function (e) {
+    e.replaceChildren();
+    if (!anyFilter()) { e.textContent = t('flt_hint'); return; }
+    DIMS.forEach(function (d) {
+      if (state.filter[d] == null) return;
+      var c = el('button', 'u-chip', t('flt_' + d) + ': ' + dimLabel(d, state.filter[d]) + '  ×'); c.type = 'button';
+      c.addEventListener('click', function () { setFilter(d, state.filter[d]); });
+      e.appendChild(c);
+    });
+    var clr = el('button', 'u-chip clear', t('flt_clear')); clr.type = 'button';
+    clr.addEventListener('click', function () { DIMS.forEach(function (d) { state.filter[d] = null; }); redrawAll(); });
+    e.appendChild(clr);
+  });
+  R('sessnote', function (e) { e.textContent = (state.filter.model != null || state.filter.agent != null || state.filter.effort != null || state.filter.via != null) ? t('sess_nofilter') : ''; });
+
+  R('lead', function (e, v) {
+    var cost = v.tot.cost || 1;
+    rich(e, 'lead', {
+      period: v.hourly ? t('period_24h') : t('period_range', { from: fDayY(v.start), to: fDayY(v.b.now) }),
+      tokens: fmtTok(v.tot.tokens), cost: fmtCost(v.tot.cost),
+      model: v.byModel.length ? v.byModel[0].name + ' (' + fmtPct(100 * v.byModel[0].cost / cost) + ')' : '—',
+      project: v.byProject.length ? v.byProject[0].name + ' (' + fmtPct(100 * v.byProject[0].cost / cost) + ')' : '—'
+    });
+  });
+  R('snap', function (e, v) {
+    var age = Date.now() - v.b.now;
+    e.textContent = t('snap', { time: fDT(v.b.now) }) + (age > 6e4 ? ' ' + t('ago', { d: dur(age) }) : '');
+    e.style.color = age > 24 * 36e5 ? 'var(--color-warn)' : '';
+  });
+  R('big', function (e, v) { e.textContent = state.metric === 'cost' ? fmtCost0(v.tot.cost) : fmtTok(v.tot.tokens); });
+  R('biglabel', function (e, v) { e.textContent = t(state.metric === 'cost' ? 'big_cost' : 'big_tokens') + (v.hourly ? t('span_24h') : t('span_days', { n: v.buckets.length })); });
+  R('delta', function (e, v) {
+    if (!v.prev) { e.textContent = t('delta_nodata'); return; }
+    var cur = state.metric === 'cost' ? v.tot.cost : v.tot.tokens, p = state.metric === 'cost' ? v.prev.cost : v.prev.tokens;
+    if (!p) { e.textContent = t('delta_zero'); return; }
+    var ch = 100 * (cur - p) / p;
+    e.replaceChildren(el('b', null, (ch >= 0 ? '+' : '−') + fmtPct0(Math.abs(ch))),
+      document.createTextNode(' ' + t('delta', { span: v.hourly ? t('span2_24h') : t('span2_days', { n: v.buckets.length }), prev: fmtVal(p) })));
+  });
+  R('n_msgs', function (e, v) { e.textContent = fmtInt(v.tot.msgs); });
+  R('n_sess', function (e, v) { var s = sessView(v); e.textContent = s ? fmtInt(s.length) : '—'; });
+  function bucketTotals(v) {
+    var m = new Map(v.buckets.map(function (d) { return [v.bkey(d), 0]; }));
+    v.rows.forEach(function (r) { var k = v.bkey(r.hour); if (m.has(k)) m.set(k, m.get(k) + mval(r)); });
+    return v.buckets.map(function (d) { return { d: d, v: m.get(v.bkey(d)) }; });
+  }
+  R('avg_label', function (e, v) { e.textContent = t(v.hourly ? 'avg_hour' : 'avg_day'); });
+  R('avg', function (e, v) { e.textContent = fmtVal((state.metric === 'cost' ? v.tot.cost : v.tot.tokens) / v.buckets.length); });
+  R('peak_label', function (e, v) { var bt = bucketTotals(v), p = bt[d3.maxIndex(bt, function (x) { return x.v; })]; e.textContent = t(v.hourly ? 'peak_hour' : 'peak_day') + (p && p.v ? ' (' + (v.hourly ? fHour(p.d) : fDay(p.d)) + ')' : ''); });
+  R('peak', function (e, v) { var bt = bucketTotals(v); e.textContent = fmtVal(d3.max(bt, function (x) { return x.v; }) || 0); });
+  R('charttitle', function (e, v) { e.textContent = t('chart_title', { by: t(v.hourly ? 'by_hour' : 'by_day'), what: t(state.metric === 'cost' ? 'what_cost' : 'what_tokens') }); });
+  R('t_all', function (e, v) { e.textContent = fmtTok(v.tot.tokens); });
+  R('t_read', function (e, v) { e.textContent = fmtTok(v.tot.cache_read); });
+  R('t_unc', function (e, v) { e.textContent = fmtTok(v.tot.input + v.tot.cache_write); });
+  R('t_out', function (e, v) { e.textContent = fmtTok(v.tot.output); });
+  R('t_cost', function (e, v) { e.textContent = fmtCost(v.tot.cost); });
+  R('t_saved', function (e, v) { e.textContent = fmtCost(v.tot.saved); });
+
+  function barAndLegend(barName, legName, parts) {
+    R(barName, function (e, v) {
+      e.replaceChildren();
+      var ps = parts(v), tot = d3.sum(ps, function (p) { return p.v; }) || 1;
+      ps.forEach(function (p) { if (!p.v) return; var s = el('span'); s.style.flex = Math.max(p.v, tot * 0.004) + ' 0 0'; s.style.background = p.c; e.appendChild(s); });
+    });
+    R(legName, function (e, v) {
+      e.replaceChildren();
+      var ps = parts(v), tot = d3.sum(ps, function (p) { return p.v; }) || 1;
+      ps.forEach(function (p) {
+        var d = el('span'), i = el('i'); i.style.background = p.c;
+        d.append(i, document.createTextNode(t(p.l)), el('b', null, p.f(p.v) + (p.pct ? ' · ' + fmtPct(100 * p.v / tot) : '')));
+        e.appendChild(d);
+      });
+    });
+  }
+  barAndLegend('typebar', 'typelegend', function (v) {
+    return [
+      { l: 'ty_in', v: v.tot.input, c: dash.colors[0], f: fmtTok },
+      { l: 'ty_read', v: v.tot.cache_read, c: 'var(--cds-chart-muted)', f: fmtTok, pct: true },
+      { l: 'ty_write', v: v.tot.cache_write, c: dash.colors[1], f: fmtTok, pct: true },
+      { l: 'ty_out', v: v.tot.output, c: dash.colors[2], f: fmtTok, pct: true }
+    ];
+  });
+  barAndLegend('subbar', 'sublegend', function (v) {
+    var get = function (s) { var x = v.bySub.find(function (r) { return r.name === s; }); return x ? x.cost : 0; };
+    return [
+      { l: 'sub_main', v: get(0), c: dash.colors[0], f: fmtCost, pct: true },
+      { l: 'sub_agents', v: get(1), c: dash.colors[1], f: fmtCost, pct: true }
+    ];
+  });
+
+  function emptyRow(e, cols, key) { var td = el('td', null, t(key)); td.colSpan = cols; td.style.textAlign = 'left'; td.style.color = 'var(--color-fg-muted)'; var tr = el('tr'); tr.appendChild(td); e.appendChild(tr); }
+  function breakdown(name, dim, colorFn, limit, skipEmpty) {
+    R(name, function (e, v) {
+      e.replaceChildren();
+      var all = v.by[dim], total = d3.sum(all, function (r) { return r.cost; }) || 1;
+      if (skipEmpty) all = all.filter(function (r) { return r.name !== ''; });
+      if (!all.length) { emptyRow(e, 4, 'none_period'); return; }
+      var rows = all.slice(0, limit), sel = state.filter[dim];
+      if (sel != null && !rows.some(function (r) { return r.name === sel; })) {
+        var hit = all.find(function (r) { return r.name === sel; });
+        if (hit) rows.push(hit);
+      }
+      var shown = new Set(rows.map(function (r) { return r.name; })), rest = all.filter(function (r) { return !shown.has(r.name); });
+      if (rest.length) rows.push({ name: null, label: t('other_n', { n: rest.length }), cost: d3.sum(rest, function (r) { return r.cost; }), tokens: d3.sum(rest, function (r) { return r.tokens; }), other: true });
+      var max = d3.max(rows, function (r) { return r.cost; }) || 1;
+      rows.forEach(function (r) {
+        var tr = el('tr'), td = el('td'), w = el('div', 'u-model'), bar = el('i');
+        bar.style.width = (100 * r.cost / max) + '%'; bar.style.background = r.other ? 'var(--cds-chart-muted)' : colorFn(r, v);
+        w.append(el('span', null, r.other ? r.label : dimLabel(dim, r.name)), bar); td.appendChild(w);
+        tr.append(td, el('td', null, fmtCost(r.cost)), el('td', null, fmtPct(100 * r.cost / total)), el('td', null, fmtTok(r.tokens)));
+        if (!r.other) {
+          tr.className = 'u-click' + (sel === r.name ? ' sel' : sel != null ? ' dim' : '');
+          tr.tabIndex = 0; tr.setAttribute('role', 'button'); tr.setAttribute('aria-pressed', String(sel === r.name));
+          tr.addEventListener('click', function () { setFilter(dim, r.name); });
+          tr.addEventListener('keydown', function (ev) { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); setFilter(dim, r.name); } });
+        }
+        e.appendChild(tr);
+      });
+    });
+  }
+  breakdown('models', 'model', function (r, v) { return v.b.colorOf[r.name]; }, 8);
+  breakdown('projects', 'project', function () { return dash.colors[0]; }, 8);
+  breakdown('agents', 'agent', function () { return dash.colors[1]; }, 10);
+  breakdown('efforts', 'effort', function () { return dash.colors[2]; }, 8);
+  breakdown('vias', 'via', function (r) { return r.name.slice(0, 4) === 'mcp:' ? dash.colors[3] : dash.colors[4]; }, 12, true);
+
+  R('sessions', function (e, v) {
+    e.replaceChildren();
+    var s = sessView(v);
+    if (!s) return;
+    s.slice(0, 10).forEach(function (r) {
+      var i = r.info || {}, tr = el('tr'), td = el('td', 'u-wrapcell');
+      td.append(document.createTextNode(i.title || t('untitled')), el('small', null, (i.id || '') + ' · ' + t('calls_total', { n: fmtInt(i.msgs || 0) })));
+      tr.append(td, el('td', null, i.project || '—'), el('td', null, i.end ? fDT(new Date(i.end)) : '—'), el('td', null, fmtCost(r.cost)), el('td', null, fmtTok(r.tokens)));
+      var pick = function () { state.session = state.session === r.s ? null : r.s; dash.draw('sessions'); dash.draw('ctx'); };
+      tr.className = 'u-click' + (state.session === r.s ? ' sel' : '');
+      tr.tabIndex = 0; tr.setAttribute('role', 'button'); tr.setAttribute('aria-pressed', String(state.session === r.s));
+      tr.addEventListener('click', pick);
+      tr.addEventListener('keydown', function (ev) { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); pick(); } });
+      e.appendChild(tr);
+    });
+  });
+
+  // Context size per call along the chosen session's main thread; dashed lines mark compactions.
+  R('ctx', function (e) {
+    e.replaceChildren();
+    if (state.session == null) { e.appendChild(el('div', 'u-smallnote', t('ctx_hint'))); return; }
+    var all = dash.data('sess_ctx').data, info = dash.data('sessions').data[state.session] || {}, c = all[state.session];
+    e.appendChild(el('h3', null, t('ctx_title', { title: info.title || t('untitled') })));
+    if (!c) { e.appendChild(el('div', 'u-smallnote', t('ctx_none'))); return; }
+    var vals = c[0], marks = c[1], W = 1000, H = 190, ml = 52, mr = 10, mt = 10, mb = 12, peak = d3.max(vals) || 1;
+    var x = d3.scaleLinear().domain([0, Math.max(1, vals.length - 1)]).range([ml, W - mr]), y = d3.scaleLinear().domain([0, peak]).nice(3).range([H - mb, mt]);
+    var svg = d3.create('svg').attr('viewBox', '0 0 ' + W + ' ' + H).attr('role', 'img').attr('aria-label', t('ctx_title', { title: '' }));
+    var ticks = y.ticks(3);
+    svg.append('g').selectAll('line').data(ticks).join('line').attr('x1', ml).attr('x2', W - mr).attr('y1', y).attr('y2', y).style('stroke', 'var(--cds-chart-grid)');
+    svg.append('g').selectAll('text').data(ticks).join('text').attr('x', ml - 8).attr('y', y).attr('dy', '0.32em').attr('text-anchor', 'end').text(function (d) { return fmtTok(d * 1000); });
+    svg.append('g').selectAll('line').data(marks).join('line').attr('x1', x).attr('x2', x).attr('y1', mt).attr('y2', H - mb).style('stroke', 'var(--color-warn)').style('stroke-dasharray', '3 3');
+    svg.append('path').attr('d', d3.area().x(function (d, i) { return x(i); }).y0(y(0)).y1(function (d) { return y(d); })(vals)).style('fill', dash.colors[1]).style('fill-opacity', 0.18);
+    svg.append('path').attr('d', d3.line().x(function (d, i) { return x(i); }).y(function (d) { return y(d); })(vals)).style('fill', 'none').style('stroke', dash.colors[1]).style('stroke-width', 1.5);
+    e.appendChild(svg.node());
+    e.appendChild(el('div', 'u-smallnote', t('ctx_note', { n: fmtInt(c[2]), peak: fmtTok(peak * 1000), c: marks.length })));
+  });
+  function inProject(r) { return state.filter.project == null || r.project === state.filter.project; }
+  R('compnote', function (e, v) {
+    var d = dash.data('compactions'); if (d.status !== 'ok') { e.textContent = ''; return; }
+    var rows = d.data.filter(function (r) { return new Date(r.t) >= v.start && inProject(r); });
+    if (!rows.length) { e.textContent = t('comp_none'); return; }
+    var auto = rows.filter(function (r) { return r.trigger === 'auto'; }).length;
+    e.textContent = t('comp_line', { n: fmtInt(rows.length), auto: fmtInt(auto), manual: fmtInt(rows.length - auto), pre: fmtTok(d3.median(rows, function (r) { return +r.pre; }) || 0) });
+  });
+
+  R('calls', function (e, v) {
+    e.replaceChildren();
+    var d = dash.data('calls'), ss = dash.data('sessions'); if (d.status !== 'ok') return;
+    var dims = ['project', 'model', 'agent', 'effort'];
+    var rows = d.data.filter(function (r) {
+      if (new Date(r.t) < v.start) return false;
+      for (var i = 0; i < dims.length; i++) if (state.filter[dims[i]] != null && (r[dims[i]] || '') !== state.filter[dims[i]]) return false;
+      return true;
+    }).sort(function (a, b) { return b.cost - a.cost; }).slice(0, 10);
+    if (!rows.length) { emptyRow(e, 6, 'none_period'); return; }
+    rows.forEach(function (r) {
+      var info = (ss.status === 'ok' && ss.data[r.s]) || {}, tr = el('tr'), td = el('td', 'u-wrapcell u-left'), tm = el('td');
+      td.append(document.createTextNode(info.title || t('untitled')), el('small', null, r.project || ''));
+      tm.append(document.createTextNode(r.model), el('small', null, dimLabel('agent', r.agent || 'main') + (r.effort ? ' · ' + r.effort : '')));
+      tr.append(el('td', null, fDT(new Date(r.t))), td, tm, el('td', null, fmtTok(+r.context)), el('td', null, fmtTok(+r.output)), el('td', null, fmtCost(+r.cost)));
+      e.appendChild(tr);
+    });
+  });
+  R('callnote', function (e) { e.textContent = state.filter.via != null ? t('calls_novia') : anyFilter() ? t('calls_filtered') : ''; });
+
+  function errRows(v) {
+    var d = dash.data('errors'); if (d.status !== 'ok') return [];
+    return d.data.map(function (r) { return { hour: new Date(r.hour), kind: r.kind, project: r.project, n: +r.n }; })
+      .filter(function (r) { return r.hour >= v.start && inProject(r); });
+  }
+  R('errors', function (e, v) {
+    e.replaceChildren();
+    var rows = errRows(v);
+    if (!rows.length) { emptyRow(e, 3, 'err_none'); return; }
+    d3.rollups(rows, function (rs) { return { n: d3.sum(rs, function (r) { return r.n; }), last: d3.max(rs, function (r) { return r.hour; }) }; }, function (r) { return r.kind; })
+      .sort(function (a, b) { return b[1].n - a[1].n; }).forEach(function (x) {
+        var i = x[0].indexOf(':'), tr = el('tr');
+        tr.append(el('td', null, t(x[0].slice(0, i) === 'retry' ? 'err_retry' : 'err_final') + ': ' + x[0].slice(i + 1)), el('td', null, fmtInt(x[1].n)), el('td', null, fDT(x[1].last)));
+        e.appendChild(tr);
+      });
+  });
+  R('errspark', function (e, v) {
+    e.replaceChildren();
+    var rows = errRows(v), m = new Map(v.buckets.map(function (d) { return [v.bkey(d), 0]; }));
+    rows.forEach(function (r) { var k = v.bkey(r.hour); if (m.has(k)) m.set(k, m.get(k) + r.n); });
+    var max = d3.max(Array.from(m.values())) || 0;
+    e.style.display = max ? '' : 'none';
+    v.buckets.forEach(function (d) {
+      var n = m.get(v.bkey(d)), s = el('span');
+      s.style.height = (max ? 100 * n / max : 0) + '%';
+      s.title = (v.hourly ? fDay(d) + ' ' + fHour(d) : fDay(d)) + ': ' + fmtInt(n);
+      e.appendChild(s);
+    });
+  });
+
+  // Weekday by hour of day (local time), for the selected period and filters.
+  R('heat', function (e, v) {
+    e.replaceChildren();
+    var grid = d3.range(7).map(function () { return new Array(24).fill(0); });
+    // Days brought back from the archive no longer know their hour of day, so they are left out here.
+    v.rows.forEach(function (r) { if (v.b.restored.size && v.b.restored.has(dayKey(r.hour))) return; grid[(r.hour.getDay() + 6) % 7][r.hour.getHours()] += mval(r); });
+    var max = d3.max(grid, function (g) { return d3.max(g); }) || 0;
+    if (!max) { e.appendChild(el('div', 'u-smallnote', t('none_period'))); return; }
+    var W = 1000, ml = 44, ch = 22, cw = (W - ml) / 24, H = 7 * ch + 20;
+    var svg = d3.create('svg').attr('viewBox', '0 0 ' + W + ' ' + H).attr('role', 'img').attr('aria-label', t('h_heat'));
+    var dayName = function (i) { return new Date(2024, 0, 1 + i).toLocaleDateString(APP.lang === 'sl' ? 'sl-SI' : 'en-GB', { weekday: 'short' }); };
+    grid.forEach(function (g, di) {
+      svg.append('text').attr('x', ml - 8).attr('y', di * ch + ch / 2).attr('dy', '0.32em').attr('text-anchor', 'end').text(dayName(di));
+      g.forEach(function (val, h) {
+        var rc = svg.append('rect').attr('x', ml + h * cw + 1).attr('y', di * ch + 1).attr('width', cw - 2).attr('height', ch - 2).attr('rx', 2);
+        if (val) rc.style('fill', dash.colors[0]).style('fill-opacity', 0.12 + 0.88 * val / max); else rc.style('fill', 'var(--cds-chart-grid)');
+        rc.append('title').text(dayName(di) + ' ' + (h < 10 ? '0' : '') + h + ':00 · ' + fmtVal(val));
+      });
+    });
+    d3.range(0, 24, 3).forEach(function (h) { svg.append('text').attr('x', ml + h * cw + cw / 2).attr('y', H - 5).attr('text-anchor', 'middle').text((h < 10 ? '0' : '') + h + ':00'); });
+    e.appendChild(svg.node());
+  });
+
+  // Quota weeks: reset to reset, counted back from the current weekly reset time.
+  R('qweeks', function (e, v) {
+    e.replaceChildren();
+    var l = v.b.limits.find(function (x) { return x.key === 'seven_day'; });
+    if (!l || !l.resetsAt) { emptyRow(e, 4, 'qw_none'); return; }
+    var reset = +new Date(l.resetsAt), WK = 7 * 864e5, rows = passing(v.b.rows), hist = dash.data('limit_history'), seen = new Map();
+    if (hist.status === 'ok') hist.data.forEach(function (r) { if (r.key !== 'seven_day') return; var k = +new Date(r.resetsAt); seen.set(k, Math.max(seen.get(k) || 0, +r.pct)); });
+    var weeks = [];
+    for (var k = 0; k < 8; k++) {
+      var end = reset - k * WK, start = end - WK;
+      if (end <= +v.b.first) break;
+      var rs = rows.filter(function (r) { return +r.hour >= start && +r.hour < end; });
+      weeks.push({ k: k, start: new Date(start), end: new Date(end), cost: d3.sum(rs, function (r) { return r.cost; }), tokens: d3.sum(rs, function (r) { return r.tokens; }), pct: k === 0 ? +l.percentUsed : seen.get(end) });
+    }
+    var max = d3.max(weeks, function (w) { return w.cost; }) || 1;
+    weeks.forEach(function (w) {
+      var tr = el('tr'), td = el('td'), box = el('div', 'u-model'), bar = el('i');
+      bar.style.width = (100 * w.cost / max) + '%'; bar.style.background = w.k === 0 ? dash.colors[0] : 'var(--cds-chart-muted)';
+      box.append(el('span', null, fDay(w.start) + ' – ' + fDay(w.end) + (w.k === 0 ? ' (' + t('qw_current') + ')' : '')), bar); td.appendChild(box);
+      tr.append(td, el('td', null, fmtCost(w.cost)), el('td', null, fmtTok(w.tokens)),
+        el('td', null, w.pct == null ? '—' : fmtPct0(w.pct) + ' ' + t(w.k === 0 ? 'qw_sofar' : 'qw_lastseen')));
+      e.appendChild(tr);
+    });
+  });
+
+  function exportCsv() {
+    var v = view(); if (!v) return;
+    var per = d3.timeFormat(v.hourly ? '%Y-%m-%d %H:00' : '%Y-%m-%d'), keys = ['model', 'project', 'agent', 'effort', 'via'], nums = ['input', 'output', 'cache_write', 'cache_read', 'tokens', 'cost', 'msgs'], agg = new Map();
+    v.rows.forEach(function (r) {
+      var id = [per(r.hour)].concat(keys.map(function (k) { return r[k]; })), key = id.join('\u0001'), a = agg.get(key);
+      if (!a) { a = { id: id, n: nums.map(function () { return 0; }) }; agg.set(key, a); }
+      nums.forEach(function (k, i) { a.n[i] += r[k]; });
+    });
+    // Text cells are quoted; a leading = + - @ is neutralised so a spreadsheet never runs it as a formula.
+    var cell = function (x) { var c = String(x); if (/^[=+\-@\t\r]/.test(c)) c = "'" + c; return '"' + c.replace(/"/g, '""') + '"'; };
+    var lines = [['period'].concat(keys, ['input', 'output', 'cache_write', 'cache_read', 'tokens', 'cost_usd', 'calls']).join(',')];
+    Array.from(agg.values()).sort(function (a, b) { return a.id.join('\u0001') < b.id.join('\u0001') ? -1 : 1; }).forEach(function (a) {
+      lines.push(a.id.map(cell).concat(a.n.map(function (x, i) { return nums[i] === 'cost' ? x.toFixed(4) : String(Math.round(x)); })).join(','));
+    });
+    var url = URL.createObjectURL(new Blob(['\ufeff' + lines.join('\r\n') + '\r\n'], { type: 'text/csv;charset=utf-8' })), a = document.createElement('a');
+    a.href = url; a.download = 'burnboard-' + state.range + '-' + dayKey(v.b.now) + '.csv';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function () { URL.revokeObjectURL(url); }, 10000);
+  }
+  document.querySelectorAll('[data-export]').forEach(function (b) { b.addEventListener('click', exportCsv); });
+
+  R('limits', function (e, v) {
+    e.replaceChildren();
+    v.b.limits.forEach(function (l) {
+      var pct = +l.percentUsed, reset = new Date(l.resetsAt), left = reset - Date.now();
+      var box = el('div'), top = el('div', 'u-lim-top'), meter = el('div', 'u-meter'), fill = el('span'), sub = el('div', 'u-lim-sub');
+      top.append(el('span', null, t('lim_' + l.key)), el('b', null, fmtPct0(pct)));
+      fill.style.width = Math.min(100, pct) + '%';
+      fill.style.background = pct >= 90 ? 'var(--color-bad)' : pct >= 70 ? 'var(--color-warn)' : 'var(--color-ok)';
+      meter.appendChild(fill);
+      sub.appendChild(document.createTextNode(left > 0 ? t('lim_reset', { d: dur(left), at: fDT(reset) }) : t('lim_passed')));
+      if (l.key === 'five_hour' && left > 0 && pct > 0) {
+        var s5 = new Date(+reset - 5 * 36e5), f5 = (v.b.now - s5) / (5 * 36e5), h5 = +d3.utcHour.floor(s5);
+        // Rows are whole hours: of the hour the window starts in, count only the part inside the window.
+        var part5 = 1 - (+s5 - h5) / 36e5;
+        var c5 = d3.sum(v.b.rows, function (r) { return +r.hour > h5 ? r.cost : +r.hour === h5 ? r.cost * part5 : 0; });
+        sub.appendChild(el('br'));
+        rich(sub, 'lim_5h', { cost: fmtCost(c5), per: fmtCost(c5 / pct) }, true);
+        if (f5 > 0.05 && f5 < 1) {
+          sub.appendChild(el('br'));
+          var e5 = pct / f5;
+          if (e5 >= 100) rich(sub, 'pace5_hit', { at: fDT(new Date(+s5 + (100 / e5) * 5 * 36e5)) }, true);
+          else rich(sub, 'pace5_end', { pct: fmtPct0(e5) }, true);
+        }
+      }
+      if (l.key === 'seven_day' && left > 0) {
+        var ws = new Date(+reset - 7 * 864e5), frac = (v.b.now - ws) / (7 * 864e5);
+        var wc = d3.sum(v.b.rows, function (r) { return r.hour >= ws ? r.cost : 0; });
+        sub.appendChild(el('br'));
+        if (pct > 0) rich(sub, 'lim_week', { cost: fmtCost(wc), per: fmtCost(wc / pct) }, true);
+        else rich(sub, 'lim_week_only', { cost: fmtCost(wc) }, true);
+        if (pct > 0 && frac > 0.02) {
+          sub.appendChild(el('br'));
+          var endPct = pct / frac;
+          if (endPct >= 100) rich(sub, 'pace_hit', { at: fDT(new Date(+ws + (100 / endPct) * 7 * 864e5)) }, true);
+          else rich(sub, 'pace_end', { pct: fmtPct0(endPct) }, true);
+        }
+        if (pct > 0 && pct < 100 && wc > 0) {
+          var room = (100 - pct) * wc / pct;
+          sub.appendChild(el('br'));
+          rich(sub, 'lim_left', { cost: '~' + fmtCost0(room), perday: fmtCost0(room / Math.max(1, left / 864e5)) }, true);
+        }
+      }
+      box.append(top, meter, sub);
+      e.appendChild(box);
+    });
+    if (!v.b.limits.length) e.textContent = t('lim_none');
+  });
+
+  // This week's limit: the measured percentage now, spread back over the week by this Mac's cost,
+  // plus every reading taken at a refresh, an even-pace line and a straight projection to the reset.
+  function weekData() {
+    var b = base(); if (!b) return null;
+    var l = b.limits.find(function (x) { return x.key === 'seven_day'; });
+    if (!l || !l.resetsAt) return null;
+    var reset = new Date(l.resetsAt), ws = new Date(+reset - 7 * 864e5), pct = +l.percentUsed;
+    if (b.now >= reset) return null;
+    var byHour = d3.rollup(b.rows.filter(function (r) { return r.hour >= ws; }), function (rs) { return d3.sum(rs, function (r) { return r.cost; }); }, function (r) { return +r.hour; });
+    var hours = d3.utcHours(d3.utcHour.floor(ws), b.now), cum = 0, pts = [{ t: ws, c: 0 }];
+    hours.forEach(function (h) { cum += byHour.get(+h) || 0; pts.push({ t: new Date(Math.min(+h + 36e5, +b.now)), c: cum }); });
+    var est = cum > 0 ? pts.map(function (p) { return { t: p.t, p: pct * p.c / cum }; }) : [];
+    var hist = dash.data('limit_history'), meas = [];
+    if (hist.status === 'ok') meas = hist.data.filter(function (r) { return r.key === 'seven_day' && r.resetsAt === l.resetsAt; }).map(function (r) { return { t: new Date(r.t), p: +r.pct }; });
+    var frac = (b.now - ws) / (7 * 864e5), endPct = frac > 0.02 && pct > 0 ? pct / frac : null;
+    return { ws: ws, reset: reset, now: b.now, pct: pct, est: est, meas: meas, endPct: endPct };
+  }
+  dash.draw('weekchart', function (box) {
+    var w = weekData();
+    if (!w || (!w.est.length && !w.meas.length)) { box.textContent = base() ? t('wk_none') : '—'; return; }
+    var W = Math.max(280, box.clientWidth), H = 190, mt = 10, mb = 24, mr = 12, ml = 40;
+    var ymax = Math.max(100, Math.min(200, w.endPct || 0));
+    var x = d3.scaleTime().domain([w.ws, w.reset]).range([ml, W - mr]), y = d3.scaleLinear().domain([0, ymax]).range([H - mb, mt]);
+    var svg = d3.create('svg').attr('width', '100%').attr('height', H).attr('viewBox', '0 0 ' + W + ' ' + H).attr('role', 'img').attr('aria-label', t('h_week'));
+    var yt = ymax > 120 ? [0, 50, 100, Math.round(ymax)] : [0, 50, 100];
+    svg.append('g').selectAll('line').data(yt).join('line').attr('x1', ml).attr('x2', W - mr).attr('y1', y).attr('y2', y)
+      .style('stroke', function (d) { return d === 100 ? 'var(--color-bad)' : 'var(--cds-chart-grid)'; }).style('stroke-dasharray', function (d) { return d === 100 ? '2 3' : null; });
+    svg.append('g').selectAll('text').data(yt).join('text').attr('x', ml - 8).attr('y', y).attr('dy', '0.32em').attr('text-anchor', 'end').text(function (d) { return fmtPct0(d); });
+    var days = d3.timeDay.range(d3.timeDay.ceil(w.ws), w.reset);
+    svg.append('g').selectAll('text').data(days).join('text').attr('x', function (d) { return x(d3.timeHour.offset(d, 12)); }).attr('y', H - 6).attr('text-anchor', 'middle')
+      .text(function (d) { return d.toLocaleDateString(APP.lang === 'sl' ? 'sl-SI' : 'en-GB', { weekday: 'short' }); });
+    svg.append('g').selectAll('line').data(days).join('line').attr('x1', x).attr('x2', x).attr('y1', mt).attr('y2', H - mb).style('stroke', 'var(--cds-chart-grid)');
+    var line = d3.line().x(function (d) { return x(d.t); }).y(function (d) { return y(d.p); });
+    svg.append('path').attr('d', line([{ t: w.ws, p: 0 }, { t: w.reset, p: 100 }])).style('fill', 'none').style('stroke', 'var(--cds-chart-muted)').style('stroke-width', 1.5).style('stroke-dasharray', '4 4');
+    if (w.est.length) svg.append('path').attr('d', line(w.est)).style('fill', 'none').style('stroke', dash.colors[0]).style('stroke-width', 2);
+    if (w.endPct) svg.append('path').attr('d', line([{ t: w.now, p: w.pct }, { t: w.reset, p: Math.min(w.endPct, ymax) }])).style('fill', 'none').style('stroke', dash.colors[0]).style('stroke-width', 1.5).style('stroke-dasharray', '2 4');
+    svg.append('g').selectAll('circle').data(w.meas).join('circle').attr('cx', function (d) { return x(d.t); }).attr('cy', function (d) { return y(d.p); }).attr('r', 3.5).style('fill', 'var(--color-fg)');
+    svg.append('text').attr('x', Math.min(x(w.now) + 8, W - mr - 30)).attr('y', y(w.pct) - 8).style('fill', 'var(--color-fg)').style('font-weight', 500).text(fmtPct0(w.pct));
+    box.replaceChildren(svg.node());
+  });
+  R('weeklegend', function (e) {
+    e.replaceChildren();
+    [['wk_est', dash.colors[0], 'line'], ['wk_meas', 'var(--color-fg)', 'dot'], ['wk_pace', 'var(--cds-chart-muted)', 'line']].forEach(function (x) {
+      var d = el('span'), i = el('i', x[2]); i.style.background = x[1];
+      d.append(i, document.createTextNode(t(x[0]))); e.appendChild(d);
+    });
+  });
+
+  function chartKeys(v) {
+    var tot = d3.rollup(v.rows, function (rs) { return d3.sum(rs, mval); }, function (r) { return r.model; });
+    var ranked = Array.from(tot.entries()).sort(function (a, b) { return b[1] - a[1]; }).map(function (x) { return x[0]; });
+    var top = ranked.slice(0, 5);
+    return { top: top, keys: ranked.length > 5 ? top.concat(['__other']) : top };
+  }
+  function keyName(k) { return k === '__other' ? t('other') : k; }
+  function keyColor(k, v) { return k === '__other' ? 'var(--cds-chart-muted)' : v.b.colorOf[k]; }
+  R('chartlegend', function (e, v) {
+    e.replaceChildren();
+    chartKeys(v).keys.forEach(function (k) {
+      var d = el('span'), i = el('i'); i.style.background = keyColor(k, v);
+      d.append(i, document.createTextNode(keyName(k))); e.appendChild(d);
+    });
+  });
+
+  dash.draw('chart', function (box) {
+    var v = view();
+    if (!v) { box.textContent = '—'; return; }
+    var W = Math.max(280, box.clientWidth), H = 260, mt = 10, mb = 26, mr = 8;
+    var ck = chartKeys(v), keys = ck.keys, top = ck.top;
+    var data = v.buckets.map(function (d) { var o = { d: d, k: v.bkey(d) }; keys.forEach(function (k) { o[k] = 0; }); return o; });
+    var idx = new Map(data.map(function (o) { return [o.k, o]; }));
+    v.rows.forEach(function (r) { var o = idx.get(v.bkey(r.hour)); if (!o) return; o[top.indexOf(r.model) >= 0 ? r.model : '__other'] += mval(r); });
+    var series = d3.stack().keys(keys)(data);
+    var ymax = d3.max(data, function (o) { return d3.sum(keys, function (k) { return o[k]; }); }) || 1;
+    var y = d3.scaleLinear().domain([0, ymax]).nice(4).range([H - mb, mt]);
+    var fLab = v.hourly ? fHour : fDay;
+    var fTick = function (x) { return state.metric === 'cost' ? fmtCost0(x) : fmtTok(x); };
+    var svg = d3.create('svg').attr('width', '100%').attr('height', H).attr('viewBox', '0 0 ' + W + ' ' + H).attr('role', 'img')
+      .attr('aria-label', t('chart_title', { by: t(v.hourly ? 'by_hour' : 'by_day'), what: t(state.metric === 'cost' ? 'what_cost' : 'what_tokens') }));
+    var ticks = y.ticks(4), tmp = svg.append('g');
+    ticks.forEach(function (x) { tmp.append('text').text(fTick(x)); });
+    box.replaceChildren(svg.node());
+    var ml = 0;
+    tmp.selectAll('text').each(function () { ml = Math.max(ml, this.getComputedTextLength()); });
+    tmp.remove();
+    ml = Math.ceil(ml) + 10;
+    var x = d3.scaleBand().domain(data.map(function (o) { return o.k; })).range([ml, W - mr]).paddingInner(data.length > 40 ? 0.15 : 0.3).paddingOuter(0.05);
+    svg.append('g').selectAll('line').data(ticks).join('line').attr('x1', ml).attr('x2', W - mr).attr('y1', y).attr('y2', y).style('stroke', 'var(--cds-chart-grid)');
+    svg.append('g').selectAll('text').data(ticks).join('text').attr('x', ml - 8).attr('y', y).attr('dy', '0.32em').attr('text-anchor', 'end').text(fTick);
+    series.forEach(function (s) {
+      svg.append('g').style('fill', keyColor(s.key, v))
+        .selectAll('rect').data(s).join('rect')
+        .attr('x', function (d) { return x(d.data.k); }).attr('width', x.bandwidth())
+        .attr('y', function (d) { return y(d[1]); }).attr('height', function (d) { return Math.max(0, y(d[0]) - y(d[1])); });
+    });
+    var step = Math.max(1, Math.ceil(data.length / Math.max(2, Math.floor((W - ml) / 56))));
+    svg.append('g').selectAll('text').data(data.filter(function (d, i) { return (data.length - 1 - i) % step === 0; })).join('text')
+      .attr('x', function (d) { return x(d.k) + x.bandwidth() / 2; }).attr('y', H - 8).attr('text-anchor', 'middle').text(function (d) { return fLab(d.d); });
+    var tip = el('div', 'u-tip'); tip.hidden = true; box.appendChild(tip);
+    svg.append('g').selectAll('rect').data(data).join('rect')
+      .attr('x', function (d) { return x(d.k) - 1; }).attr('width', x.bandwidth() + 2).attr('y', mt).attr('height', H - mb - mt).style('fill', 'transparent')
+      .on('pointerenter pointermove', function (ev, d) {
+        tip.replaceChildren(el('b', null, (v.hourly ? fDay(d.d) + ' ' + fHour(d.d) : fDay(d.d)) + ' · ' + fmtVal(d3.sum(keys, function (k) { return d[k]; }))));
+        keys.forEach(function (k) {
+          if (!d[k]) return;
+          var row = el('div'), i = el('i'); i.style.background = keyColor(k, v);
+          row.append(i, document.createTextNode(keyName(k) + ': ' + fmtVal(d[k]))); tip.appendChild(row);
+        });
+        tip.hidden = false;
+        var scale = box.clientWidth / W, cx = (x(d.k) + x.bandwidth() / 2) * scale, tw = tip.offsetWidth;
+        tip.style.left = Math.max(0, Math.min(box.clientWidth - tw, cx - tw / 2)) + 'px';
+        tip.style.top = '0px';
+      })
+      .on('pointerleave', function () { tip.hidden = true; });
+  });
+
+  function sync() {
+    document.querySelectorAll('[data-range]').forEach(function (b) { var on = b.getAttribute('data-range') === state.range; b.classList.toggle('on', on); b.setAttribute('aria-pressed', String(on)); });
+    document.querySelectorAll('[data-metric]').forEach(function (b) { var on = b.getAttribute('data-metric') === state.metric; b.classList.toggle('on', on); b.setAttribute('aria-pressed', String(on)); });
+  }
+  document.querySelectorAll('[data-range]').forEach(function (b) { b.addEventListener('click', function () { state.range = b.getAttribute('data-range'); sync(); redrawAll(); }); });
+  document.querySelectorAll('[data-metric]').forEach(function (b) { b.addEventListener('click', function () { state.metric = b.getAttribute('data-metric'); sync(); redrawAll(); }); });
+  sync();
+})();
+</script>
