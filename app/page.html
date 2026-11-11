@@ -31,6 +31,7 @@
 .u-menu { position: absolute; right: 0; top: calc(100% + 6px); z-index: 6; min-width: 200px; display: flex; flex-direction: column; gap: 2px; padding: 6px; background: var(--cds-surface-popover); border: 1px solid var(--cds-border); box-shadow: var(--cds-shadow-popover); border-radius: var(--cds-radius); }
 .u-menu > button { text-align: left; color: var(--color-fg); background: transparent; border: 0; border-radius: 6px; padding: 8px 10px; cursor: pointer; }
 .u-menu > button:hover { background: var(--color-panel); }
+.u-menu-ver { padding: 6px 10px 4px; color: var(--color-fg-muted); font-size: var(--cds-font-size-caption); }
 .u-menu-lang { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 6px 10px 4px; border-top: 1px solid var(--color-border-line); margin-top: 4px; color: var(--color-fg-muted); font-size: var(--cds-font-size-caption); }
 .u-filters { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding-top: 10px; font-size: var(--cds-font-size-body); color: var(--color-fg-muted); }
 .u-chip { color: var(--color-fg); background: var(--color-panel); border: 1px solid var(--u-accent); border-radius: 999px; padding: 3px 10px; cursor: pointer; max-width: 100%; }
@@ -196,6 +197,7 @@ tr.u-detail > td { padding: 0 8px 16px; background: var(--color-panel); white-sp
                 <button type="button" data-lang="sl">SL</button>
               </div>
             </div>
+            <div class="u-menu-ver" id="l-version" hidden></div>
           </div>
         </div>
       </div>

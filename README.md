@@ -51,6 +51,8 @@ Burnboard never uploads your logs or your usage numbers. What your own Claude Co
 
 Extra Claude folders you add keep their own files in a `profiles/` folder inside the two folders above.
 
+After its first refresh the app also tidies your Downloads folder: the Burnboard zip you downloaded, and old copies of the app once it runs from Applications, go to the Trash. It only looks at items named `Burnboard-<version>.zip`, `Burnboard.app` or `Burnboard 2.app`, never at anything newer than the running app, and never removes anything for good.
+
 ## Remove everything
 
 Quit the app, then delete:

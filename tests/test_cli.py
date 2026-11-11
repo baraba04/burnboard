@@ -88,6 +88,17 @@ def test_config_and_consent():
     code, out = run("status")
     assert code == 0 and out["needs_setup"] is True and out["consent"]["given"] is False
     assert [p["id"] for p in out["profiles"]] == ["default"] and out["profiles"][0]["active"] is True
+    # the app's own version: only a well-formed one is passed on; none (development) is an empty string
+    kept = os.environ.pop("BURNBOARD_VERSION", None)
+    try:
+        assert run("status")[1]["version"] == ""
+        for given, shown in (("1.3.2", "1.3.2"), ("1.4", "1.4"), ("<b>1</b>", ""), ("1", ""), ("", "")):
+            os.environ["BURNBOARD_VERSION"] = given
+            assert run("status")[1]["version"] == shown, given
+    finally:
+        os.environ.pop("BURNBOARD_VERSION", None)
+        if kept is not None:
+            os.environ["BURNBOARD_VERSION"] = kept
     assert set(out["claude"]) == {"found", "version", "loggedIn", "email", "subscriptionType"}
     assert "node" not in out and isinstance(out["python"], str)
 

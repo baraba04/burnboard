@@ -95,6 +95,8 @@ def status(cfg):
         "sources": core.sources(active),
         "consent": c,
         "needs_setup": not c["given"],
+        # the running app's own version (set by the app; the development server has none), for the More menu
+        "version": os.environ.get("BURNBOARD_VERSION", "") if core.version_tuple(os.environ.get("BURNBOARD_VERSION")) else "",
     }
 
 

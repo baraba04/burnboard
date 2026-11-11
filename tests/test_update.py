@@ -217,7 +217,7 @@ def main():
     bins = compile_all()
     # the plain build (what build-app.sh makes) has no trace of the test hooks
     strings = subprocess.run(["strings", "-a", bins["plain"]], capture_output=True, text=True).stdout
-    assert "BURNBOARD_TEST_" not in strings and "--update-test" not in strings and "BURNBOARD_VERSION" in strings
+    assert "BURNBOARD_TEST_" not in strings and "--update-test" not in strings and "--tidy-test" not in strings and "BURNBOARD_VERSION" in strings
     assert "BURNBOARD_TEST_" in subprocess.run(["strings", "-a", bins["app"]], capture_output=True, text=True).stdout
 
     keys = {}
@@ -486,6 +486,51 @@ def main():
         open(os.path.join(c.www, "release.json"), "w").write('{"pad": "' + "x" * 70000 + '"}')
         assert c.update() == {"error": "update_no_network"}
         c.untouched()
+
+        # tidying the Downloads folder at start: old zips and old copies go to the (stand-in) Trash, nothing else moves
+        def tidy(own, version="1.3.1", linked_downloads=False):
+            d = os.path.join(T, "tidy-%d" % next(counter))
+            dl, trash, apps, away = (os.path.join(d, n) for n in ("Downloads", "Trash", "Applications", "away"))
+            for f in (dl, trash, apps, away):
+                os.makedirs(f)
+            for n in ("Burnboard-1.3.zip", "Burnboard-1.3 (1).zip", "Burnboard-1.3.1.zip", "Burnboard-1.4.zip", "Burnboard-1.3.zip.txt",
+                      "burnboard-30-2026-11-11.csv", "Burnboard-x.zip", "Other-1.3.zip", "Burnboard-1.3 (1) copy.zip"):
+                open(os.path.join(dl, n), "w").write("x")
+            with open(os.path.join(dl, "Burnboard-1.2.zip"), "wb") as fh:      # larger than a release may be: not ours
+                fh.truncate(50 * 1024 * 1024 + 1)
+            open(os.path.join(away, "real.zip"), "w").write("x")
+            os.symlink(os.path.join(away, "real.zip"), os.path.join(dl, "Burnboard-1.1.zip"))          # a link: left alone
+            os.makedirs(os.path.join(dl, "Burnboard-1.0.zip"))                                         # a folder: left alone
+            make_bundle(os.path.join(dl, "Burnboard.app"), "1.3", sign=False, pad=False)
+            make_bundle(os.path.join(dl, "Burnboard 2.app"), "1.3.1", sign=False, pad=False)
+            make_bundle(os.path.join(dl, "Burnboard 3.app"), "1.4", sign=False, pad=False)             # newer: left alone
+            make_bundle(os.path.join(dl, "Burnboard 4.app"), "1.3", bundle_id="com.example.other", sign=False, pad=False)
+            make_bundle(os.path.join(dl, "Burnboard copy.app"), "1.3", sign=False, pad=False)          # another name
+            make_bundle(os.path.join(away, "Burnboard.app"), "1.3", sign=False, pad=False)
+            os.symlink(os.path.join(away, "Burnboard.app"), os.path.join(dl, "Burnboard 5.app"))       # a link: left alone
+            make_bundle(os.path.join(apps, "Burnboard.app"), version, sign=False, pad=False)
+            os.symlink(os.path.join(dl, "Burnboard 2.app"), os.path.join(apps, "Linked.app"))          # the app run through a link
+            before = set(os.listdir(dl))
+            if linked_downloads:                                                                       # Downloads is a link
+                os.rename(dl, dl + "-real")
+                os.symlink(dl + "-real", dl)
+            env = dict(os.environ, BURNBOARD_TEST_DOWNLOADS=dl, BURNBOARD_TEST_TRASH=trash, BURNBOARD_TEST_VERSION=version,
+                       BURNBOARD_TEST_OWN_PATH=own.replace("@", d))
+            r = subprocess.run([bins["app"], "--tidy-test"], env=env, capture_output=True, text=True, timeout=60)
+            assert r.returncode == 0, r.stderr[-1500:]
+            assert set(os.listdir(dl)) | set(os.listdir(trash)) == before and not set(os.listdir(dl)) & set(os.listdir(trash))
+            assert os.path.exists(os.path.join(away, "real.zip")) and os.path.isdir(os.path.join(away, "Burnboard.app"))
+            assert os.path.isdir(os.path.join(apps, "Burnboard.app"))
+            return set(os.listdir(trash))
+        counter = iter(range(1000))
+        zips = {"Burnboard-1.3.zip", "Burnboard-1.3 (1).zip", "Burnboard-1.3.1.zip"}
+        assert tidy("@/Applications/Burnboard.app") == zips | {"Burnboard.app", "Burnboard 2.app"}     # settled: zips and old copies
+        assert tidy("/private/var/folders/x/T/AppTranslocation/ABC/d/Burnboard.app") == zips           # translocated: zips only
+        assert tidy("@/Downloads/Burnboard.app") == zips                                              # runs from Downloads itself
+        assert tidy("@/Applications/Burnboard.app", version="1.3") == {"Burnboard-1.3.zip", "Burnboard-1.3 (1).zip", "Burnboard.app"}
+        assert tidy("@/Applications/Linked.app") == zips | {"Burnboard.app"}                           # the running copy stays
+        assert tidy("@/Applications/Burnboard.app", linked_downloads=True) == set()                   # a linked folder: nothing
+        assert tidy("@/Applications/Burnboard.app", version="") == set()                              # unknown own version: nothing
     finally:
         for srv in (server, server6):
             srv.shutdown()
@@ -493,7 +538,7 @@ def main():
     print("ok: updater and release tool (valid release into an existing, a new and a linked target; tampered, short and long zip; "
           "wrong signature, edited, unsigned and malformed release.json; foreign zip URL; downgrade and same version; wrong bundle id, "
           "wrong plist version, unsigned and altered bundle, two top-level items, link at top level; foreign redirect, no server, 404, "
-          "oversized release.json; swap, Trash failure, no exchange support and its roll-back, fallback-target rule, leftovers, fixed headers, "
+          "oversized release.json; swap, Trash failure, no exchange support and its roll-back, fallback-target rule, leftovers, fixed headers, Downloads tidying, "
           "key-match check and package.sh stop; keygen never overwrites; the -O plain build has no test hooks). "
           "Not covered: the real GitHub download, relaunch, a target on another volume, a read-only target")
 

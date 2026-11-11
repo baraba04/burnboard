@@ -99,6 +99,7 @@ var I18N = {
     src_plan_history: 'Plan usage history kept by the Claude desktop app (readings: {n}).',
     src_claude_code: 'Claude Code logs (files: {n}).', src_claude_code_xdg: 'Claude Code logs in ~/.config/claude (files: {n}).', src_cowork: 'Cowork sessions of the Claude desktop app (files: {n}).',
     does_prices: 'Downloads a public price list (from raw.githubusercontent.com) during a refresh and works out the costs itself.',
+    does_tidy: 'After the first refresh it moves what the download and an update leave in your Downloads folder to the Trash: the Burnboard zip and old copies of the app. Nothing else there is touched.',
     does_update: 'During a refresh it also reads one small public file on GitHub that names the newest Burnboard version. Only when you click Update now: it downloads that version from GitHub, checks its signature and replaces itself.',
     does_limits: 'Makes one small call on your own Claude subscription at each refresh, to read the plan limits. Your own Claude Code makes it, and it may include your own Claude Code instruction files, as it does for any session. No log content or usage data is in it.',
     does_signin: 'Only when you click the sign-in button: Claude Code itself signs you in on Anthropic\'s own page. Burnboard does not take part in it.',
@@ -205,6 +206,7 @@ var I18N = {
     src_plan_history: 'Zgodovina porabe naročnine, ki jo hrani namizna aplikacija Claude (odčitkov: {n}).',
     src_claude_code: 'Dnevniki Claude Code (datotek: {n}).', src_claude_code_xdg: 'Dnevniki Claude Code v ~/.config/claude (datotek: {n}).', src_cowork: 'Seje Cowork namizne aplikacije Claude (datotek: {n}).',
     does_prices: 'Ob osvežitvi prenese javni cenik (z raw.githubusercontent.com) in stroške izračuna sam.',
+    does_tidy: 'Po prvi osvežitvi premakne v Koš, kar v mapi Prenosi ostane od prenosa in posodobitve: Burnboardov zip in stare kopije aplikacije. Ničesar drugega se tam ne dotakne.',
     does_update: 'Ob osvežitvi prebere tudi eno majhno javno datoteko na GitHubu, ki pove najnovejšo različico Burnboard. Samo ko klikneš Posodobi zdaj: prenese to različico z GitHuba, preveri njen podpis in se zamenja.',
     does_limits: 'Ob vsaki osvežitvi naredi en majhen klic prek tvoje lastne naročnine Claude, da prebere omejitve. Klic opravi tvoj lastni Claude Code in lahko vključi tvoje lastne datoteke z navodili za Claude Code, kot pri vsaki seji. V klicu ni vsebine dnevnikov ali podatkov o porabi.',
     does_signin: 'Samo ko klikneš gumb za prijavo: Claude Code te prijavi sam, na Anthropicovi lastni strani. Burnboard pri tem ne sodeluje.',
@@ -479,7 +481,7 @@ function renderSetup() {
   box.appendChild(row);
 
   box.appendChild(el('h3', '', T('setup_does')));
-  list(['does_logs', 'does_cowork', 'does_plan_history', 'does_prices', 'does_update', 'does_limits', 'does_signin']);
+  list(['does_logs', 'does_cowork', 'does_plan_history', 'does_prices', 'does_update', 'does_tidy', 'does_limits', 'does_signin']);
   var label = el('label'), cb = el('input'), txt = el('span');
   cb.type = 'checkbox'; cb.checked = SETUP.limits;
   cb.addEventListener('change', function () { SETUP.limits = cb.checked; });
@@ -517,7 +519,11 @@ window.addEventListener('DOMContentLoaded', function () {
   if (!BRIDGE) return startDash();
   var sb = document.getElementById('l-setup-btn');
   sb.hidden = false; sb.addEventListener('click', openSetup);
-  getStatus().then(function (st) { if (st.needs_setup) showSetup(st); else startDash(); }).catch(startDash);
+  getStatus().then(function (st) {
+    var ver = document.getElementById('l-version');
+    if (st.version && ver) { ver.textContent = 'Burnboard ' + st.version; ver.hidden = false; }
+    if (st.needs_setup) showSetup(st); else startDash();
+  }).catch(startDash);
 });
 </script>
 </head>
